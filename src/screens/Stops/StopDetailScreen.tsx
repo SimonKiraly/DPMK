@@ -11,6 +11,7 @@ import { RouteBadge } from '@/components/ui/RouteBadge';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { EmptyState, LoadingState } from '@/components/ui/StateViews';
+import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
 import { DepartureRow } from '@/components/transport/DepartureChip';
 import { colors } from '@/constants/theme';
 import { getRoute } from '@/data/routes';
@@ -19,19 +20,27 @@ import { useInterval } from '@/hooks/useInterval';
 import { getStopDetail } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
 import { useFavoritesStore } from '@/store/useFavoritesStore';
-import type { Departure } from '@/types';
+import type { Departure, Stop } from '@/types';
 import type { RootStackParamList } from '@/navigation/types';
 
 export function StopDetailScreen() {
   const navigation = useRootNavigation();
   const { stopId } = useRoute<RouteProp<RootStackParamList, 'StopDetail'>>().params;
-  const stop = getStop(stopId);
 
+  const [stop, setStop] = useState<Stop | undefined>(() => getStop(stopId));
   const [departures, setDepartures] = useState<Departure[] | null>(null);
   const isSaved = useFavoritesStore((s) => s.isStopSaved(stopId));
   const toggleStop = useFavoritesStore((s) => s.toggleStop);
 
-  const reload = () => getStopDetail(stopId).then((r) => setDepartures(r?.departures ?? []));
+  const reload = () =>
+    getStopDetail(stopId).then((r) => {
+      if (r) {
+        setStop(r.stop);
+        setDepartures(r.departures);
+      } else {
+        setDepartures([]);
+      }
+    });
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,7 +53,7 @@ export function StopDetailScreen() {
     return (
       <Screen>
         <AppHeader title="Zastávka" />
-        <EmptyState title="Zastávka sa nenašla" />
+        {departures === null ? <LoadingState /> : <EmptyState title="Zastávka sa nenašla" />}
       </Screen>
     );
   }
@@ -64,6 +73,8 @@ export function StopDetailScreen() {
           />
         }
       />
+
+      <TransportStatusBanner style={{ marginBottom: 10 }} />
 
       <Card style={{ marginTop: 4 }}>
         <Text variant="overline" color={colors.textTertiary}>

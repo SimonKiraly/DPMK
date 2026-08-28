@@ -7,6 +7,7 @@ import { Chip } from '@/components/ui/Chip';
 import { RouteBadge } from '@/components/ui/RouteBadge';
 import { SearchField } from '@/components/ui/SearchField';
 import { Text } from '@/components/ui/Text';
+import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
 import { OccupancyDots } from '@/components/transport/OccupancyDots';
 import { TransitMap } from '@/components/map/TransitMap';
 import { colors, shadows } from '@/constants/theme';
@@ -61,6 +62,7 @@ export function LiveMapScreen() {
             <Chip key={f.value} label={f.label} selected={mode === f.value} onPress={() => setMode(f.value)} />
           ))}
         </ScrollView>
+        <TransportStatusBanner style={{ marginTop: 8 }} />
       </View>
 
       {/* bottom sheet */}

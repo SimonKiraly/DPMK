@@ -8,6 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateViews';
+import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
 import { StopCard } from '@/components/transport/StopCard';
 import { colors } from '@/constants/theme';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
@@ -48,6 +49,7 @@ export function NearbyStopsScreen() {
       </View>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 14, gap: 10, backgroundColor: colors.bg, flex: 1, paddingBottom: 24 }}>
+        <TransportStatusBanner />
         {usingFallback && permission !== 'granted' ? (
           <View
             style={{

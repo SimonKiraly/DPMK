@@ -6,7 +6,7 @@ import { ListRow } from '@/components/ui/ListRow';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { Toggle } from '@/components/ui/Toggle';
-import { APP_NAME, APP_VERSION } from '@/constants/config';
+import { APP_NAME, APP_VERSION, ubian } from '@/constants/config';
 import { colors } from '@/constants/theme';
 import { useRootNavigation } from '@/navigation/hooks';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
@@ -72,6 +72,29 @@ export function SettingsScreen() {
           </View>
         ))}
       </View>
+
+      <Text variant="overline" color={colors.textTertiary} style={{ marginTop: 18, marginBottom: 8 }}>
+        Zdroj dát
+      </Text>
+      <View style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 15 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="body" weight="bold">
+              Živé dáta MHD (beta)
+            </Text>
+            <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
+              Reálne odchody, meškania a polohy vozidiel z DPMK / Ubian. Vypnuté = ukážkové dáta.
+            </Text>
+          </View>
+          <Toggle
+            value={preferences.liveTransportData === true}
+            onValueChange={(v) => setPreference('liveTransportData', v)}
+          />
+        </View>
+      </View>
+      <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 6 }}>
+        Zdroj: {ubian.attribution}
+      </Text>
 
       <Text variant="overline" color={colors.textTertiary} style={{ marginTop: 18, marginBottom: 8 }}>
         Mesto a jazyk

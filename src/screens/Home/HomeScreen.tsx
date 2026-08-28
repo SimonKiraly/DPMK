@@ -48,11 +48,18 @@ export function HomeScreen() {
   const { stops: nearby, usingFallback } = useNearbyStops({ limit: 3 });
 
   const upcoming = useMemo(() => {
-    const source = favoriteStops[0]?.stopId ?? nearby[0]?.stop.id;
-    if (!source) return null;
-    const stop = getStop(source);
-    if (!stop) return null;
-    return { stop, departures: getStopDepartures(source, 3) };
+    // Prefer a saved favourite that is also in the nearby result (has live data),
+    // otherwise the closest nearby stop.
+    const favMatch = favoriteStops
+      .map((f) => nearby.find((n) => n.stop.id === f.stopId))
+      .find((n): n is NonNullable<typeof n> => !!n);
+    const chosen = favMatch ?? nearby[0];
+    if (chosen) return { stop: chosen.stop, departures: chosen.departures.slice(0, 3) };
+
+    // Fallback: a mock stop (favourite not near, or no location yet).
+    const source = favoriteStops[0]?.stopId;
+    const stop = source ? getStop(source) : undefined;
+    return stop ? { stop, departures: getStopDepartures(stop.id, 3) } : null;
   }, [favoriteStops, nearby]);
 
   const goQuick = (key: string) => {

@@ -85,34 +85,46 @@ export function VehicleDetailScreen() {
           />
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
-          <View style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 16, padding: 12 }}>
-            <Text variant="overline" color={colors.textTertiary}>
-              Najbližšia zastávka
-            </Text>
-            <Text variant="body" weight="extrabold" style={{ marginTop: 3 }} numberOfLines={1}>
-              {detail.nextStopName}
-            </Text>
+        {detail.nextStopName || detail.etaNextStopMinutes > 0 ? (
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+            <View style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 16, padding: 12 }}>
+              <Text variant="overline" color={colors.textTertiary}>
+                Najbližšia zastávka
+              </Text>
+              <Text variant="body" weight="extrabold" style={{ marginTop: 3 }} numberOfLines={1}>
+                {detail.nextStopName || '—'}
+              </Text>
+            </View>
+            {detail.etaNextStopMinutes > 0 ? (
+              <View style={{ width: 104, backgroundColor: colors.warningTint, borderRadius: 16, padding: 12 }}>
+                <Text variant="overline" color={colors.warning}>
+                  Príchod
+                </Text>
+                <Text variant="sectionTitle" style={{ marginTop: 3 }}>
+                  {formatRelativeMinutes(detail.etaNextStopMinutes)}
+                </Text>
+              </View>
+            ) : null}
           </View>
-          <View style={{ width: 104, backgroundColor: colors.warningTint, borderRadius: 16, padding: 12 }}>
-            <Text variant="overline" color={colors.warning}>
-              Príchod
-            </Text>
-            <Text variant="sectionTitle" style={{ marginTop: 3 }}>
-              {formatRelativeMinutes(detail.etaNextStopMinutes)}
-            </Text>
-          </View>
-        </View>
+        ) : null}
 
-        <View style={{ marginTop: 14 }}>
-          <OccupancyDots occupancy={detail.occupancy} />
-        </View>
+        {detail.source !== 'live' ? (
+          <View style={{ marginTop: 14 }}>
+            <OccupancyDots occupancy={detail.occupancy} />
+          </View>
+        ) : null}
       </Card>
 
       <Text variant="overline" color={colors.textTertiary} style={{ marginTop: 22, marginBottom: 12 }}>
         Zastávky na trase
       </Text>
-      <StopTimeline entries={detail.timeline} />
+      {detail.timeline.length > 0 ? (
+        <StopTimeline entries={detail.timeline} />
+      ) : (
+        <Text variant="caption" color={colors.textTertiary}>
+          Načítavam zastávky na trase…
+        </Text>
+      )}
     </Screen>
   );
 }

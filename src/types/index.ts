@@ -77,6 +77,16 @@ export interface Vehicle {
   delay: DelayStatus;
   lowFloor: boolean;
   plate: string;
+  /** Source: 'sim' = local simulation, 'live' = Ubian real-time feed. */
+  source?: 'sim' | 'live';
+  /** Provider trip id (live source) — needed to fetch the stop timeline. */
+  tripId?: string;
+  /** Provider operator id (live source). */
+  operatorId?: number;
+  /** True when the feed reports the vehicle is currently dwelling at a stop. */
+  atStop?: boolean;
+  /** Live source: order of the last passed stop on the trip. */
+  lastStopOrder?: number;
 }
 
 export interface VehicleDetail extends Vehicle {
@@ -300,6 +310,8 @@ export interface UserPreferences {
   ticketExpiryReminders: boolean;
   largeText: boolean;
   highContrast: boolean;
+  /** Opt in to the live DPMK / Ubian data feed instead of the sample data. */
+  liveTransportData: boolean;
 }
 
 /* ------------------------------------------------------------------ lost & found */

@@ -50,6 +50,50 @@ export const simulation = {
   walkingMetersPerMinute: 80,
 };
 
+/**
+ * Real transport data — Ubian departure board for DPMK Košice.
+ *
+ * `dpmk-odchody.ubian.sk/navigation/*` is a public, unauthenticated JSON API
+ * (see docs/TRANSPORT-DATA-SOURCE.md). It has NO published licence, so
+ * production traffic must go through our own backend proxy; here it is used
+ * directly only as an opt-in developer preview (`dataSource.useMockTransport`
+ * is true by default). No CORS headers → works from native iOS/Android, not
+ * from `expo start --web`.
+ */
+export const ubian = {
+  baseUrl: 'https://dpmk-odchody.ubian.sk',
+  /** Košice, from GET /navigation/urban_transport_cities. */
+  cityId: 18024,
+  /** Centre of the vehicle-fleet query (the whole fleet fits in ~1.5 km). */
+  fleetCenter: KOSICE_CENTER,
+  fleetRadiusMeters: 2600,
+  requestTimeoutMs: 9000,
+  poll: {
+    vehiclesMs: 15000,
+    departuresMs: 30000,
+  },
+  cacheTtlMs: {
+    stops: 6 * 60 * 60 * 1000, // 6 h
+    stopDetail: 60 * 1000,
+    departures: 20 * 1000,
+    vehicles: 8 * 1000,
+    tripStops: 5 * 60 * 1000,
+    search: 5 * 60 * 1000,
+  },
+  attribution: 'Dopravný podnik mesta Košice, a.s. · opendata.kosice.sk',
+};
+
+/** Official static timetable — Open Data Košice (CC BY 4.0). Backend ingest only. */
+export const openDataKosice = {
+  timetableZipUrl:
+    'https://www.arcgis.com/sharing/rest/content/items/ba941d7bc56a462684a261d4f35ce17d/data',
+  datasetPage: 'https://opendata.kosice.sk/datasets/ba941d7bc56a462684a261d4f35ce17d',
+  licence: 'CC BY 4.0',
+  format: 'JDF / CIS',
+};
+
+export const UNAVAILABLE_MESSAGE = 'Momentálne sa nepodarilo načítať aktuálne dáta.';
+
 export const storageKeys = {
   tickets: 'mhdke.tickets.v1',
   favorites: 'mhdke.favorites.v1',

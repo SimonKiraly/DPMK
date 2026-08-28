@@ -10,6 +10,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/ui/StateViews';
+import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
 import { VehicleCard } from '@/components/transport/VehicleCard';
 import { colors } from '@/constants/theme';
 import { useLiveVehicles } from '@/hooks/useLiveVehicles';
@@ -62,6 +63,7 @@ export function VehicleListScreen() {
       </View>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 16, gap: 9, backgroundColor: colors.bg, flex: 1, paddingBottom: 24 }}>
+        <TransportStatusBanner />
         <SectionHeading title={`${vehicles.length} vozidiel naživo`} overline />
         {vehicles.length === 0 ? (
           <EmptyState title="Nič nenájdené" description="Skúste iné číslo linky alebo zmeňte filter." dashed />

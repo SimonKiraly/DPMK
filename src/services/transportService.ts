@@ -1,4 +1,7 @@
-import { dataSource, simulation } from '@/constants/config';
+import { dataSource, simulation, ubian } from '@/constants/config';
+import { ubianService } from '@/services/ubianService';
+import { transportStatus } from '@/store/useTransportStatusStore';
+import { useUserStore } from '@/store/useUserStore';
 import { PLACE_BY_ID } from '@/data/places';
 import {
   ROUTES,
@@ -35,6 +38,20 @@ import { haversineMeters, pointAlongPolyline } from '@/utils/geo';
  */
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Live data path is used when the app config disables mock OR the user opted in
+ * via Settings ("Živé dáta MHD"). Any live failure falls back to the mock
+ * data below and flips `transportStatus.degraded()`.
+ */
+export function isLiveTransport(): boolean {
+  if (!dataSource.useMockTransport) return true;
+  try {
+    return useUserStore.getState().preferences.liveTransportData === true;
+  } catch {
+    return false;
+  }
+}
 
 /* ------------------------------------------------------------- deterministic rng */
 
@@ -144,7 +161,21 @@ export async function getNearbyStops(
   opts: { limit?: number; maxMeters?: number; mode?: TransportMode | 'all' } = {},
 ): Promise<NearbyStop[]> {
   const { limit = 6, maxMeters = 2500, mode = 'all' } = opts;
-  if (dataSource.useMockTransport) await delay(140);
+
+  if (isLiveTransport()) {
+    try {
+      const live = await ubianService.getNearbyStops(origin, { limit, maxMeters });
+      transportStatus.ok();
+      return mode === 'all'
+        ? live
+        : live.filter((n) => n.stop.mode === mode || n.stop.lines.some((l) => getRoute(l)?.mode === mode));
+    } catch {
+      transportStatus.degraded();
+      // fall through to mock
+    }
+  }
+
+  await delay(140);
 
   return STOPS.map((stop) => {
     const distanceMeters = haversineMeters(origin, stop.location);
@@ -162,9 +193,21 @@ export async function getNearbyStops(
 }
 
 export async function getStopDetail(stopId: string): Promise<{ stop: Stop; departures: Departure[] } | null> {
+  if (isLiveTransport() && stopId.startsWith('u')) {
+    try {
+      const live = await ubianService.getStopDetail(ubianService.rawStopId(stopId));
+      if (live) {
+        transportStatus.ok();
+        return live;
+      }
+    } catch {
+      transportStatus.degraded();
+    }
+  }
+
   const stop = getStop(stopId);
   if (!stop) return null;
-  if (dataSource.useMockTransport) await delay(120);
+  await delay(120);
   return { stop, departures: getStopDepartures(stopId, 12) };
 }
 
@@ -530,23 +573,67 @@ function tick(): void {
   listeners.forEach((l) => l(vehicles));
 }
 
-function ensureRunning(): void {
+function ensureSim(): void {
   if (timer) return;
   lastTick = Date.now();
   tick();
   timer = setInterval(tick, simulation.vehicleTickMs);
 }
 
+/* --- live polling (Ubian) ------------------------------------------------- */
+
+let liveTimer: ReturnType<typeof setInterval> | null = null;
+const liveDetailCache = new Map<string, VehicleDetail>();
+
+function notify(): void {
+  listeners.forEach((l) => l(vehicles));
+}
+
+async function pollLive(): Promise<void> {
+  try {
+    const live = await ubianService.getVehicles(ubian.fleetCenter, ubian.fleetRadiusMeters);
+    vehicles = live;
+    transportStatus.ok();
+    notify();
+  } catch {
+    transportStatus.degraded();
+    // Keep the last good fleet; only if we have nothing, show one sim frame.
+    if (vehicles.length === 0 || vehicles[0]?.source === 'sim') {
+      tick();
+    } else {
+      notify();
+    }
+  }
+}
+
+function ensureLive(): void {
+  if (liveTimer) return;
+  vehicles = []; // drop any leftover sim data on the first live start
+  pollLive();
+  liveTimer = setInterval(pollLive, ubian.poll.vehiclesMs);
+}
+
 function stopIfIdle(): void {
-  if (listeners.size === 0 && timer) {
+  if (listeners.size > 0) return;
+  if (timer) {
     clearInterval(timer);
     timer = null;
+  }
+  if (liveTimer) {
+    clearInterval(liveTimer);
+    liveTimer = null;
   }
 }
 
 export function subscribeVehicles(listener: VehicleListener): () => void {
   listeners.add(listener);
-  ensureRunning();
+  if (isLiveTransport()) {
+    transportStatus.setLive(true);
+    ensureLive();
+  } else {
+    transportStatus.setLive(false);
+    ensureSim();
+  }
   listener(vehicles);
   return () => {
     listeners.delete(listener);
@@ -555,7 +642,11 @@ export function subscribeVehicles(listener: VehicleListener): () => void {
 }
 
 export function getVehicles(filter?: { mode?: TransportMode | 'all'; query?: string }): Vehicle[] {
-  if (vehicles.length === 0) tick();
+  if (isLiveTransport()) {
+    if (vehicles.length === 0 && !liveTimer) pollLive();
+  } else if (vehicles.length === 0) {
+    tick();
+  }
   let list = vehicles;
   if (filter?.mode && filter.mode !== 'all') {
     list = list.filter((v) => v.mode === filter.mode);
@@ -579,6 +670,27 @@ export function getVehicle(id: string): Vehicle | undefined {
 
 export function getVehicleDetail(id: string): VehicleDetail | undefined {
   const vehicle = getVehicle(id);
+
+  // --- live vehicle: fresh position/delay now, stop timeline from the cache
+  if (id.startsWith('u_')) {
+    const base = vehicle ?? liveDetailCache.get(id);
+    if (!base) return undefined;
+    if (vehicle) {
+      ubianService
+        .getVehicleDetail(vehicle)
+        .then((d) => liveDetailCache.set(id, d))
+        .catch(() => {});
+    }
+    const cachedDetail = liveDetailCache.get(id);
+    return {
+      ...(vehicle ?? cachedDetail!),
+      timeline: cachedDetail?.timeline ?? [],
+      nextStopId: cachedDetail?.nextStopId ?? (vehicle?.nextStopId || ''),
+      nextStopName: cachedDetail?.nextStopName ?? (vehicle?.nextStopName || ''),
+      etaNextStopMinutes: cachedDetail?.etaNextStopMinutes ?? (vehicle?.etaNextStopMinutes || 0),
+    };
+  }
+
   if (!vehicle) return undefined;
   const route = getRoute(vehicle.routeShortName);
   if (!route) return undefined;

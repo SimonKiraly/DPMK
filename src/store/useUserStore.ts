@@ -15,6 +15,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   ticketExpiryReminders: true,
   largeText: false,
   highContrast: false,
+  liveTransportData: false,
 };
 
 interface UserState {
