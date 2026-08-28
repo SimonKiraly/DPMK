@@ -15,6 +15,12 @@ export function formatDate(input: string | Date): string {
   return `${d.getDate()}. ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+/** "01.09.2026" — numeric Slovak date, used on the wallet pass. */
+export function formatDateNumeric(input: string | Date): string {
+  const d = typeof input === 'string' ? new Date(input) : input;
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+}
+
 /** "€1,10" — Slovak decimal comma. */
 export function formatEuros(amount: number, withSign = false): string {
   const sign = amount < 0 ? '−' : withSign ? '+' : '';

@@ -9,6 +9,7 @@ import { useWalletStore } from '@/store/useWalletStore';
 import { useFavoritesStore } from '@/store/useFavoritesStore';
 import { useLostFoundStore } from '@/store/useLostFoundStore';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
+import { useWalletPassStore } from '@/store/useWalletPassStore';
 import { useInterval } from '@/hooks/useInterval';
 
 /**
@@ -24,6 +25,7 @@ export function useAppBootstrap(): { ready: boolean } {
   const notificationsHydrated = useNotificationStore((s) => s.hydrated);
   const lostFoundHydrated = useLostFoundStore((s) => s.hydrated);
   const onboardingHydrated = useOnboardingStore((s) => s.hydrated);
+  const walletPassesHydrated = useWalletPassStore((s) => s.hydrated);
 
   const restore = useUserStore((s) => s.restore);
   const [restored, setRestored] = useState(false);
@@ -35,7 +37,8 @@ export function useAppBootstrap(): { ready: boolean } {
     favoritesHydrated &&
     notificationsHydrated &&
     lostFoundHydrated &&
-    onboardingHydrated;
+    onboardingHydrated &&
+    walletPassesHydrated;
 
   useEffect(() => {
     if (!hydrated || restored) return;

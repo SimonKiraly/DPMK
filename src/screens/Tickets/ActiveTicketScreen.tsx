@@ -10,7 +10,10 @@ import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/ui/StateViews';
 import { CountdownRing } from '@/components/tickets/CountdownRing';
 import { TicketQr } from '@/components/tickets/TicketQr';
+import { AddToWalletButton } from '@/components/wallet/AddToWalletButton';
+import { WalletPassPreview } from '@/components/wallet/WalletPassPreview';
 import { colors, shadows } from '@/constants/theme';
+import { walletService } from '@/services/walletService';
 import { useCountdown } from '@/hooks/useCountdown';
 import { activateStoredTicket } from '@/store/checkout';
 import { useRootNavigation } from '@/navigation/hooks';
@@ -47,6 +50,7 @@ export function ActiveTicketScreen() {
 
   const isValid = ticket.status === 'valid' && !expired;
   const isInactive = ticket.status === 'inactive';
+  const showWallet = walletService.isEligibleTicket(ticket) && ticket.status !== 'expired' && !expired;
 
   return (
     <LinearGradient colors={[colors.primary, colors.primaryDeep]} style={{ flex: 1 }}>
@@ -149,6 +153,29 @@ export function ActiveTicketScreen() {
                   {Math.round((1 - progress) * 100)}%
                 </Text>
               </View>
+            </View>
+          ) : null}
+
+          {showWallet ? (
+            <View
+              style={{
+                backgroundColor: colors.surface,
+                borderRadius: 20,
+                padding: 16,
+                marginTop: 16,
+                gap: 12,
+              }}
+            >
+              <Text variant="overline" color={colors.textTertiary}>
+                Digitálna peňaženka
+              </Text>
+              <WalletPassPreview ticket={ticket} passengerName={userName} />
+              <AddToWalletButton ticket={ticket} />
+              {!walletService.isBackendConfigured() ? (
+                <Text variant="caption" color={colors.textTertiary}>
+                  Plná integrácia s {walletService.platformLabel()} bude dostupná v produkčnej verzii aplikácie.
+                </Text>
+              ) : null}
             </View>
           ) : null}
 

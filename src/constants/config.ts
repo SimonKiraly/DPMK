@@ -19,6 +19,13 @@ export const dataSource = {
   useMockPayments: true,
   useMockAuth: true,
   useMockLostFound: true,
+  /**
+   * When false, `walletService` posts to the real pass-signing backend
+   * (`endpoints.wallet`). Apple / Google certificates and keys NEVER live in
+   * this app — the backend signs the pass and returns a `.pkpass` URL or a
+   * "Save to Google Wallet" URL.
+   */
+  useMockWallet: true,
 };
 
 /** Base URLs for the eventual real integrations. */
@@ -26,6 +33,13 @@ export const endpoints = {
   transport: 'https://api.dpmk.sk/v1', // IDS Východ / DPMK live vehicle feed (placeholder)
   payments: 'https://payments.example.sk', // PSP (GoPay / Stripe / Adyen) (placeholder)
   auth: 'https://id.dpmk.sk', // customer identity (placeholder)
+  /**
+   * Wallet pass-signing backend (placeholder). Expected routes:
+   *   POST /wallet/apple/pass          -> { passUrl }        (.pkpass download)
+   *   POST /wallet/google/pass         -> { saveUrl }        (Save to Google Wallet)
+   *   GET  /wallet/ticket/:id/status   -> { state, platform, openUrl }
+   */
+  wallet: 'https://api.dpmk.sk/wallet',
 };
 
 /** Live-simulation cadence for the mock transport layer. */
@@ -40,6 +54,7 @@ export const storageKeys = {
   tickets: 'mhdke.tickets.v1',
   favorites: 'mhdke.favorites.v1',
   wallet: 'mhdke.wallet.v1',
+  walletPasses: 'mhdke.walletpasses.v1',
   user: 'mhdke.user.v1',
   notifications: 'mhdke.notifications.v1',
   lostFound: 'mhdke.lostfound.v1',

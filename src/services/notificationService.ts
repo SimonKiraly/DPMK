@@ -1,6 +1,5 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
-
 import type { AppNotification, Ticket } from '@/types';
+import { isExpoGo } from '@/utils/environment';
 import { formatClock } from '@/utils/format';
 import { createId } from '@/utils/id';
 
@@ -18,9 +17,6 @@ import { createId } from '@/utils/id';
  * build (`expo run:ios` / EAS) gets the real OS notifications, and remote push
  * (Expo Push / FCM / APNs) plugs in behind `registerForPush()` later.
  */
-
-/** True when running inside the Expo Go sandbox (no custom native code). */
-export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 /** OS-level local notifications are only reliable outside Expo Go. */
 export const osNotificationsSupported = !isExpoGo;

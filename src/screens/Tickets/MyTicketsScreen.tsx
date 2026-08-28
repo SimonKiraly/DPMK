@@ -8,7 +8,9 @@ import { Screen } from '@/components/ui/Screen';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/ui/StateViews';
+import { WalletStatusBadge } from '@/components/wallet/WalletStatusBadge';
 import { colors, shadows } from '@/constants/theme';
+import { walletService } from '@/services/walletService';
 import { useCountdown } from '@/hooks/useCountdown';
 import { activateStoredTicket } from '@/store/checkout';
 import { useRootNavigation } from '@/navigation/hooks';
@@ -20,6 +22,8 @@ import {
 } from '@/store/useTicketStore';
 import type { Ticket } from '@/types';
 import { formatClock, formatDate, formatEuros } from '@/utils/format';
+
+const shortName = (name: string) => name.replace(' predplatný lístok', '').replace(' lístok', '');
 
 export function MyTicketsScreen() {
   const navigation = useRootNavigation();
@@ -53,16 +57,19 @@ export function MyTicketsScreen() {
         <View style={{ gap: 10, marginBottom: 22 }}>
           <SectionHeading title="Pripravené na aktiváciu" overline />
           {inactive.map((t) => (
-            <Card key={t.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text variant="body" weight="bold">
-                  {t.name.replace(' predplatný lístok', '').replace(' lístok', '')}
-                </Text>
-                <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
-                  Kúpené {formatDate(t.purchasedAt)} · {formatEuros(t.priceEuros)}
-                </Text>
+            <Card key={t.id} style={{ gap: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="body" weight="bold">
+                    {shortName(t.name)}
+                  </Text>
+                  <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
+                    Kúpené {formatDate(t.purchasedAt)} · {formatEuros(t.priceEuros)}
+                  </Text>
+                </View>
+                <Button label="Aktivovať" size="sm" fullWidth={false} variant="accent" onPress={() => activateStoredTicket(t.id)} />
               </View>
-              <Button label="Aktivovať" size="sm" fullWidth={false} variant="accent" onPress={() => activateStoredTicket(t.id)} />
+              <WalletStatusBadge ticket={t} />
             </Card>
           ))}
         </View>
@@ -75,9 +82,7 @@ export function MyTicketsScreen() {
             <View
               key={t.id}
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 12,
+                gap: 10,
                 backgroundColor: colors.surface,
                 borderWidth: 1,
                 borderColor: colors.border,
@@ -86,31 +91,34 @@ export function MyTicketsScreen() {
                 opacity: 0.9,
               }}
             >
-              <View
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 12,
-                  backgroundColor: '#F1F4F9',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text variant="overline" color={colors.textTertiary}>
-                  {t.name.match(/\d+/)?.[0] ?? '—'}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 12,
+                    backgroundColor: '#F1F4F9',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text variant="overline" color={colors.textTertiary}>
+                    {t.name.match(/\d+/)?.[0] ?? '—'}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text variant="body" weight="bold">
+                    {shortName(t.name)}
+                  </Text>
+                  <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
+                    {t.expiresAt ? `Vypršal ${formatDate(t.expiresAt)} · ${formatClock(t.expiresAt)}` : formatDate(t.purchasedAt)}
+                  </Text>
+                </View>
+                <Text variant="body" weight="extrabold" color={colors.textSecondary}>
+                  {formatEuros(t.priceEuros)}
                 </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text variant="body" weight="bold">
-                  {t.name.replace(' predplatný lístok', '').replace(' lístok', '')}
-                </Text>
-                <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
-                  {t.expiresAt ? `Vypršal ${formatDate(t.expiresAt)} · ${formatClock(t.expiresAt)}` : formatDate(t.purchasedAt)}
-                </Text>
-              </View>
-              <Text variant="body" weight="extrabold" color={colors.textSecondary}>
-                {formatEuros(t.priceEuros)}
-              </Text>
+              <WalletStatusBadge ticket={t} />
             </View>
           ))}
         </View>
@@ -121,20 +129,22 @@ export function MyTicketsScreen() {
 
 function ActiveRow({ ticket, onPress }: { ticket: Ticket; onPress: () => void }) {
   const { label } = useCountdown(ticket.expiresAt, ticket.activatedAt);
+  const longTerm = walletService.isEligibleTicket(ticket);
   return (
     <Pressable onPress={onPress}>
-      <LinearGradient colors={[colors.accent, colors.accentDeep]} style={{ borderRadius: 20, padding: 16, ...shadows.card }}>
+      <LinearGradient colors={[colors.accent, colors.accentDeep]} style={{ borderRadius: 20, padding: 16, gap: 10, ...shadows.card }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text variant="bodyStrong" color={colors.text}>
-            {ticket.name.replace(' predplatný lístok', '').replace(' lístok', '')}
+            {shortName(ticket.name)}
           </Text>
           <Text variant="bodyStrong" color={colors.text} style={{ fontVariant: ['tabular-nums'] }}>
             {label}
           </Text>
         </View>
-        <Text variant="caption" weight="bold" color="#5E4A08" style={{ marginTop: 4 }}>
+        <Text variant="caption" weight="bold" color="#5E4A08">
           {ticket.expiresAt ? `Platný do ${formatClock(ticket.expiresAt)} · ` : ''}Ťuknutím zobrazíte QR
         </Text>
+        {longTerm ? <WalletStatusBadge ticket={ticket} /> : null}
       </LinearGradient>
     </Pressable>
   );
