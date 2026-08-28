@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 import { storageKeys } from '@/constants/config';
 import { ticketService } from '@/services/ticketService';
@@ -58,13 +59,18 @@ export const useTicketStore = create<TicketState>()(
       sweepExpired() {
         const now = Date.now();
         const newlyExpired: Ticket[] = [];
-        set((s) => ({
-          tickets: s.tickets.map((t) => {
-            const updated = withComputedStatus(t, now);
+        let changed = false;
+        const next = get().tickets.map((t) => {
+          const updated = withComputedStatus(t, now);
+          if (updated !== t) {
+            changed = true;
             if (t.status === 'valid' && updated.status === 'expired') newlyExpired.push(updated);
-            return updated;
-          }),
-        }));
+          }
+          return updated;
+        });
+        // Only write (and notify subscribers) when a status actually flipped —
+        // the 15s sweep is otherwise a no-op and must not trigger re-renders.
+        if (changed) set({ tickets: next });
         return newlyExpired;
       },
 
@@ -90,6 +96,7 @@ export const useTicketStore = create<TicketState>()(
 
 /* -------------------------------------------------------------- selectors */
 
+/** `.find` returns a stable element reference, so this selector is loop-safe as-is. */
 export const selectActiveTicket = (s: TicketState): Ticket | undefined =>
   s.tickets.find((t) => t.status === 'valid');
 
@@ -98,3 +105,16 @@ export const selectInactiveTickets = (s: TicketState): Ticket[] =>
 
 export const selectTicketHistory = (s: TicketState): Ticket[] =>
   s.tickets.filter((t) => t.status === 'expired');
+
+/*
+ * Zustand v5 compares selector output with `Object.is`. A selector that returns
+ * a fresh array on every call (`.filter`) breaks React's useSyncExternalStore
+ * cached-snapshot contract and causes "Maximum update depth exceeded".
+ * These hooks wrap those selectors in `useShallow` so an unchanged result keeps
+ * a stable reference.
+ */
+export const useInactiveTickets = (): Ticket[] =>
+  useTicketStore(useShallow(selectInactiveTickets));
+
+export const useTicketHistory = (): Ticket[] =>
+  useTicketStore(useShallow(selectTicketHistory));

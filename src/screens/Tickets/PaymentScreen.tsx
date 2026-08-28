@@ -17,7 +17,7 @@ import { checkoutTicket } from '@/store/checkout';
 import { useRootNavigation } from '@/navigation/hooks';
 import type { RootStackParamList } from '@/navigation/types';
 import { useUserStore } from '@/store/useUserStore';
-import { useWalletStore } from '@/store/useWalletStore';
+import { useWalletMethods } from '@/store/useWalletStore';
 import type { PaymentMethodKind } from '@/types';
 import { formatEuros } from '@/utils/format';
 
@@ -32,7 +32,7 @@ export function PaymentScreen() {
   const navigation = useRootNavigation();
   const { productId, fareClass, activateNow } = useRoute<RouteProp<RootStackParamList, 'Payment'>>().params;
   const product = getTicketProduct(productId);
-  const methods = useWalletStore((s) => s.methods());
+  const methods = useWalletMethods();
   const haptics = useUserStore((s) => s.preferences.validationHaptics);
 
   const [selectedId, setSelectedId] = useState(methods[0]?.id ?? 'pm_apple');

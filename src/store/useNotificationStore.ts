@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 import { storageKeys } from '@/constants/config';
 import { seedNotifications } from '@/data/notifications';
-import type { AppNotification } from '@/types';
+import type { AppNotification, NotificationKind } from '@/types';
 import { zustandStorage } from '@/store/persist';
 
 interface NotificationState {
@@ -67,3 +68,7 @@ export const useNotificationStore = create<NotificationState>()(
 
 export const selectUnreadCount = (s: NotificationState) =>
   s.notifications.filter((n) => !n.read).length;
+
+/** Notifications of a given kind, reference-stable via `useShallow`. */
+export const useNotificationsByKind = (kind: NotificationKind): AppNotification[] =>
+  useNotificationStore(useShallow((s) => s.notifications.filter((n) => n.kind === kind)));

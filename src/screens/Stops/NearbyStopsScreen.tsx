@@ -12,7 +12,7 @@ import { StopCard } from '@/components/transport/StopCard';
 import { colors } from '@/constants/theme';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
 import { useRootNavigation } from '@/navigation/hooks';
-import { useFavoritesStore } from '@/store/useFavoritesStore';
+import { useFavoriteStops, useFavoritesStore } from '@/store/useFavoritesStore';
 import type { TransportMode } from '@/types';
 
 const FILTERS: { value: TransportMode | 'all'; label: string }[] = [
@@ -30,7 +30,9 @@ export function NearbyStopsScreen() {
     limit: 12,
   });
 
-  const isStopSaved = useFavoritesStore((s) => s.isStopSaved);
+  // Subscribe to the saved list so the star toggles re-render this screen.
+  const savedStops = useFavoriteStops();
+  const isStopSaved = (stopId: string) => savedStops.some((f) => f.stopId === stopId);
   const toggleStop = useFavoritesStore((s) => s.toggleStop);
 
   return (

@@ -1,11 +1,23 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 import { storageKeys } from '@/constants/config';
 import { getBasePaymentMethods } from '@/services/paymentService';
 import type { PaymentMethod, Transaction } from '@/types';
 import { createId } from '@/utils/id';
 import { zustandStorage } from '@/store/persist';
+
+/** Pure composition of the payment-method list. Shared by the store method and the hook. */
+export function composePaymentMethods(balanceEuros: number, extraMethods: PaymentMethod[]): PaymentMethod[] {
+  const base = getBasePaymentMethods().map((m) =>
+    m.kind === 'wallet'
+      ? { ...m, detail: `Zostatok €${balanceEuros.toFixed(2).replace('.', ',')}` }
+      : m,
+  );
+  return [...base, ...extraMethods];
+}
 
 const SEED_TRANSACTIONS: Transaction[] = [
   {
@@ -54,12 +66,7 @@ export const useWalletStore = create<WalletState>()(
       hydrated: false,
 
       methods() {
-        const base = getBasePaymentMethods().map((m) =>
-          m.kind === 'wallet'
-            ? { ...m, detail: `Zostatok €${get().balanceEuros.toFixed(2).replace('.', ',')}` }
-            : m,
-        );
-        return [...base, ...get().extraMethods];
+        return composePaymentMethods(get().balanceEuros, get().extraMethods);
       },
 
       addTransaction(tx) {
@@ -138,3 +145,15 @@ export const useWalletStore = create<WalletState>()(
     },
   ),
 );
+
+/**
+ * Payment methods for components. Subscribes only to the primitive `balanceEuros`
+ * and the (shallow-compared) `extraMethods`, then derives the list with `useMemo`
+ * — so it never returns a fresh array while the underlying data is unchanged
+ * (which would loop under Zustand v5 / useSyncExternalStore).
+ */
+export function useWalletMethods(): PaymentMethod[] {
+  const balanceEuros = useWalletStore((s) => s.balanceEuros);
+  const extraMethods = useWalletStore(useShallow((s) => s.extraMethods));
+  return useMemo(() => composePaymentMethods(balanceEuros, extraMethods), [balanceEuros, extraMethods]);
+}

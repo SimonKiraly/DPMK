@@ -1,3 +1,5 @@
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+
 import type { AppNotification, Ticket } from '@/types';
 import { formatClock } from '@/utils/format';
 import { createId } from '@/utils/id';
@@ -5,22 +7,39 @@ import { createId } from '@/utils/id';
 /**
  * Notification helpers.
  *
- * The in-app notification centre is store-backed (`useNotificationStore`). This
- * service builds notification objects for app events and — where the platform
- * allows — schedules OS-level local notifications. Remote push (Expo Push /
- * FCM / APNs) plugs in behind `registerForPush()` later.
+ * The in-app notification centre is store-backed (`useNotificationStore`) and
+ * always works. This service additionally builds notification objects for app
+ * events and — where the platform supports it — schedules OS-level *local*
+ * notifications.
+ *
+ * Expo Go (SDK 53+) dropped support for remote push and, on Android, for
+ * scheduled local notifications. We detect that environment and fall back to
+ * the in-app centre only, without touching the architecture — a development
+ * build (`expo run:ios` / EAS) gets the real OS notifications, and remote push
+ * (Expo Push / FCM / APNs) plugs in behind `registerForPush()` later.
  */
 
+/** True when running inside the Expo Go sandbox (no custom native code). */
+export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+
+/** OS-level local notifications are only reliable outside Expo Go. */
+export const osNotificationsSupported = !isExpoGo;
+
 let Notifications: typeof import('expo-notifications') | null = null;
-try {
-  // Lazy so the app still runs where the native module is unavailable (web / Expo Go limits).
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  Notifications = require('expo-notifications');
-} catch {
-  Notifications = null;
+if (osNotificationsSupported) {
+  try {
+    // Loaded lazily so a missing/limited native module can never break startup.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    Notifications = require('expo-notifications');
+  } catch {
+    Notifications = null;
+  }
 }
 
 export const notificationService = {
+  /** Whether OS-level scheduling is available (false in Expo Go). */
+  supportsOsNotifications: osNotificationsSupported,
+
   async requestPermissions(): Promise<boolean> {
     if (!Notifications) return false;
     try {
@@ -33,7 +52,10 @@ export const notificationService = {
     }
   },
 
-  /** Best-effort OS reminder ~10 min before a ticket expires. */
+  /**
+   * Best-effort OS reminder ~10 min before a ticket expires. In Expo Go this is
+   * a no-op (returns null) — the in-app expiry notice from the sweep still fires.
+   */
   async scheduleTicketExpiryReminder(ticket: Ticket): Promise<string | null> {
     if (!Notifications || !ticket.expiresAt) return null;
     const fireAt = new Date(ticket.expiresAt).getTime() - 10 * 60 * 1000;

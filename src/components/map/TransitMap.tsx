@@ -71,7 +71,9 @@ export function TransitMap({
   const initialised = useRef(false);
 
   const handleLayout = (width: number, height: number) => {
-    setViewport({ width, height });
+    // Guard against re-setting an identical size — a fresh {width,height}
+    // object every layout pass would re-run dependent memos needlessly.
+    setViewport((v) => (v.width === width && v.height === height ? v : { width, height }));
     if (initialised.current || width === 0) return;
     initialised.current = true;
     const fit = clamp(Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT) * 0.92, MIN_SCALE, MAX_SCALE);

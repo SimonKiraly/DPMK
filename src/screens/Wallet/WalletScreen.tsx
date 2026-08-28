@@ -8,7 +8,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Text } from '@/components/ui/Text';
 import { colors, shadows } from '@/constants/theme';
 import { useRootNavigation } from '@/navigation/hooks';
-import { useWalletStore } from '@/store/useWalletStore';
+import { useWalletMethods, useWalletStore } from '@/store/useWalletStore';
 import type { TransactionKind } from '@/types';
 import { formatEuros, formatTimeAgo } from '@/utils/format';
 
@@ -24,7 +24,7 @@ export function WalletScreen() {
   const insets = useSafeAreaInsets();
   const balance = useWalletStore((s) => s.balanceEuros);
   const transactions = useWalletStore((s) => s.transactions);
-  const methods = useWalletStore((s) => s.methods());
+  const methods = useWalletMethods();
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

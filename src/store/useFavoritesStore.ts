@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 import { storageKeys } from '@/constants/config';
 import { getRoute } from '@/data/routes';
@@ -146,13 +147,31 @@ export const useFavoritesStore = create<FavoritesState>()(
   ),
 );
 
-export const selectFavoriteStops = (s: FavoritesState) =>
-  s.favorites.filter((f): f is Extract<Favorite, { kind: 'stop' }> => f.kind === 'stop');
-export const selectFavoriteRoutes = (s: FavoritesState) =>
-  s.favorites.filter((f): f is Extract<Favorite, { kind: 'route' }> => f.kind === 'route');
-export const selectFavoritePlaces = (s: FavoritesState) =>
-  s.favorites.filter((f): f is Extract<Favorite, { kind: 'place' }> => f.kind === 'place');
-export const selectHomePlace = (s: FavoritesState) =>
-  selectFavoritePlaces(s).find((p) => p.slot === 'home');
-export const selectWorkPlace = (s: FavoritesState) =>
-  selectFavoritePlaces(s).find((p) => p.slot === 'work');
+type FavStop = Extract<Favorite, { kind: 'stop' }>;
+type FavRoute = Extract<Favorite, { kind: 'route' }>;
+type FavPlace = Extract<Favorite, { kind: 'place' }>;
+
+export const selectFavoriteStops = (s: FavoritesState): FavStop[] =>
+  s.favorites.filter((f): f is FavStop => f.kind === 'stop');
+export const selectFavoriteRoutes = (s: FavoritesState): FavRoute[] =>
+  s.favorites.filter((f): f is FavRoute => f.kind === 'route');
+export const selectFavoritePlaces = (s: FavoritesState): FavPlace[] =>
+  s.favorites.filter((f): f is FavPlace => f.kind === 'place');
+
+/** `.find` returns a stable element — safe to use directly as a selector. */
+export const selectHomePlace = (s: FavoritesState): FavPlace | undefined =>
+  s.favorites.find((f): f is FavPlace => f.kind === 'place' && f.slot === 'home');
+export const selectWorkPlace = (s: FavoritesState): FavPlace | undefined =>
+  s.favorites.find((f): f is FavPlace => f.kind === 'place' && f.slot === 'work');
+
+/*
+ * `.filter` returns a new array each call; wrap with `useShallow` so an
+ * unchanged list keeps a stable reference and does not trigger an infinite
+ * re-render loop under Zustand v5 / useSyncExternalStore.
+ */
+export const useFavoriteStops = (): FavStop[] =>
+  useFavoritesStore(useShallow(selectFavoriteStops));
+export const useFavoriteRoutes = (): FavRoute[] =>
+  useFavoritesStore(useShallow(selectFavoriteRoutes));
+export const useFavoritePlaces = (): FavPlace[] =>
+  useFavoritesStore(useShallow(selectFavoritePlaces));

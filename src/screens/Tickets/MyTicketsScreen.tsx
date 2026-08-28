@@ -12,15 +12,20 @@ import { colors, shadows } from '@/constants/theme';
 import { useCountdown } from '@/hooks/useCountdown';
 import { activateStoredTicket } from '@/store/checkout';
 import { useRootNavigation } from '@/navigation/hooks';
-import { selectActiveTicket, selectInactiveTickets, selectTicketHistory, useTicketStore } from '@/store/useTicketStore';
+import {
+  selectActiveTicket,
+  useInactiveTickets,
+  useTicketHistory,
+  useTicketStore,
+} from '@/store/useTicketStore';
 import type { Ticket } from '@/types';
 import { formatClock, formatDate, formatEuros } from '@/utils/format';
 
 export function MyTicketsScreen() {
   const navigation = useRootNavigation();
   const active = useTicketStore(selectActiveTicket);
-  const inactive = useTicketStore(selectInactiveTickets);
-  const history = useTicketStore(selectTicketHistory);
+  const inactive = useInactiveTickets();
+  const history = useTicketHistory();
 
   const empty = !active && inactive.length === 0 && history.length === 0;
 

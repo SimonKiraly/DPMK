@@ -18,9 +18,9 @@ import { getStop, stopLabel } from '@/data/stops';
 import { getStopDepartures } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
 import {
-  selectFavoritePlaces,
-  selectFavoriteRoutes,
-  selectFavoriteStops,
+  useFavoritePlaces,
+  useFavoriteRoutes,
+  useFavoriteStops,
   useFavoritesStore,
 } from '@/store/useFavoritesStore';
 import { formatRelativeMinutes } from '@/utils/format';
@@ -32,9 +32,9 @@ export function FavoritesScreen() {
   const [tab, setTab] = useState<Tab>('places');
   const [picker, setPicker] = useState<'home' | 'work' | null>(null);
 
-  const places = useFavoritesStore(selectFavoritePlaces);
-  const stops = useFavoritesStore(selectFavoriteStops);
-  const routes = useFavoritesStore(selectFavoriteRoutes);
+  const places = useFavoritePlaces();
+  const stops = useFavoriteStops();
+  const routes = useFavoriteRoutes();
   const setPlaceFromPlaceId = useFavoritesStore((s) => s.setPlaceFromPlaceId);
   const removeFavorite = useFavoritesStore((s) => s.removeFavorite);
   const toggleStop = useFavoritesStore((s) => s.toggleStop);

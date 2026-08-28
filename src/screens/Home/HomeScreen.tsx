@@ -17,9 +17,9 @@ import { getStop, stopLabel } from '@/data/stops';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
 import { getStopDepartures } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
-import { selectFavoriteStops, useFavoritesStore } from '@/store/useFavoritesStore';
+import { useFavoriteStops } from '@/store/useFavoritesStore';
 import { selectActiveTicket, useTicketStore } from '@/store/useTicketStore';
-import { useNotificationStore } from '@/store/useNotificationStore';
+import { useNotificationsByKind } from '@/store/useNotificationStore';
 import { useUserStore } from '@/store/useUserStore';
 import { formatRelativeMinutes } from '@/utils/format';
 
@@ -42,8 +42,8 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const user = useUserStore((s) => s.user);
   const activeTicket = useTicketStore(selectActiveTicket);
-  const favoriteStops = useFavoritesStore(selectFavoriteStops);
-  const alerts = useNotificationStore((s) => s.notifications.filter((n) => n.kind === 'disruption').slice(0, 1));
+  const favoriteStops = useFavoriteStops();
+  const alerts = useNotificationsByKind('disruption').slice(0, 1);
 
   const { stops: nearby, usingFallback } = useNearbyStops({ limit: 3 });
 
