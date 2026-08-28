@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "MHD Košice",
+    "slug": "mhd-kosice",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "mhdkosice",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "sk.kosice.mhd",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "MHD Košice používa vašu polohu na zobrazenie zastávok a spojov vo vašom okolí.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "sk.kosice.mhd",
+      "adaptiveIcon": {
+        "backgroundColor": "#2B629E",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#2B629E"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "MHD Košice používa vašu polohu na zobrazenie zastávok a spojov vo vašom okolí."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MHD Košice potrebuje prístup k fotkám na priloženie fotografie k hláseniu straty."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {}
+    }
+  }
+}
