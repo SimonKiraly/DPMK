@@ -13,6 +13,30 @@ export const OPERATOR = 'Dopravný podnik mesta Košice';
 /** Košice city centre — default map focus and "current location" fallback. */
 export const KOSICE_CENTER = { latitude: 48.7204, longitude: 21.2577 };
 
+/**
+ * Geographic map (react-native-maps) defaults. iOS uses Apple Maps and needs no
+ * API key; a production Android build needs a Google Maps key supplied via the
+ * `GOOGLE_MAPS_API_KEY` env var (see app.config.js / .env.example).
+ */
+export const mapConfig = {
+  /** City-level initial region — centred on Košice, not the user. */
+  initialRegion: {
+    latitude: 48.7164,
+    longitude: 21.2611,
+    latitudeDelta: 0.085,
+    longitudeDelta: 0.075,
+  },
+  /** Zoom bounds for the +/- controls (region deltas). */
+  minLatitudeDelta: 0.0025,
+  maxLatitudeDelta: 0.4,
+  /** Above this span the map is too wide to show individual stops usefully. */
+  stopVisibilityLatitudeDelta: 0.16,
+  /** Cap on stop markers rendered at once (viewport-clipped, nearest first). */
+  maxStopMarkers: 80,
+  /** Tight span used when focusing a single stop / vehicle / the user. */
+  focusLatitudeDelta: 0.012,
+} as const;
+
 export const dataSource = {
   /** When false, services talk to real HTTP APIs (not implemented yet). */
   useMockTransport: true,

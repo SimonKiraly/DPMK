@@ -8,7 +8,6 @@ import { RouteBadge } from '@/components/ui/RouteBadge';
 import { SearchField } from '@/components/ui/SearchField';
 import { Text } from '@/components/ui/Text';
 import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
-import { OccupancyDots } from '@/components/transport/OccupancyDots';
 import { TransitMap } from '@/components/map/TransitMap';
 import { colors, shadows } from '@/constants/theme';
 import { useLiveVehicles } from '@/hooks/useLiveVehicles';
@@ -23,15 +22,15 @@ const FILTERS: { value: TransportMode | 'all'; label: string }[] = [
   { value: 'bus', label: 'Autobus' },
   { value: 'tram', label: 'Električka' },
   { value: 'night', label: 'Nočné' },
-  { value: 'rail', label: 'Vlak' },
 ];
 
 export function LiveMapScreen() {
   const navigation = useRootNavigation();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<TransportMode | 'all'>('all');
+  const [sheetHeight, setSheetHeight] = useState(220);
   const vehicles = useLiveVehicles({ mode });
-  const { stops, origin, usingFallback } = useNearbyStops({ limit: 4 });
+  const { stops, origin, usingFallback, requestPermission } = useNearbyStops({ limit: 4 });
 
   const visibleCount = vehicles.length;
   const nearbyPreview = useMemo(() => stops.slice(0, 3), [stops]);
@@ -42,6 +41,8 @@ export function LiveMapScreen() {
         vehicles={vehicles}
         modeFilter={mode}
         userLocation={usingFallback ? null : origin}
+        onRequestLocation={requestPermission}
+        controlsBottom={sheetHeight + 12}
         onSelectVehicle={(v) => navigation.navigate('VehicleDetail', { vehicleId: v.id })}
         onSelectStop={(stopId) => navigation.navigate('StopDetail', { stopId })}
       />
@@ -67,6 +68,10 @@ export function LiveMapScreen() {
 
       {/* bottom sheet */}
       <View
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          setSheetHeight((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+        }}
         style={{
           position: 'absolute',
           left: 0,

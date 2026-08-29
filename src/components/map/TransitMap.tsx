@@ -1,20 +1,31 @@
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, View } from 'react-native';
 import {
-  PanGestureHandler,
-  PinchGestureHandler,
-  State,
-  type PanGestureHandlerStateChangeEvent,
-  type PinchGestureHandlerStateChangeEvent,
-} from 'react-native-gesture-handler';
-import Svg, { Circle, Polyline, Rect } from 'react-native-svg';
-import { Ionicons } from '@expo/vector-icons';
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { StyleSheet, View } from 'react-native';
+import MapView, { Polyline, type Region } from 'react-native-maps';
 
-import { Text } from '@/components/ui/Text';
-import { colors, modeColors, shadows } from '@/constants/theme';
+import { colors } from '@/constants/theme';
+import { mapConfig } from '@/constants/config';
 import { getRouteShapes, getStops } from '@/services/transportService';
 import type { LatLng, TransportMode, Vehicle } from '@/types';
-import { WORLD_HEIGHT, WORLD_WIDTH, project } from '@/components/map/projection';
+import { MapControls } from '@/components/map/MapControls';
+import { MapErrorBoundary, MapUnavailable } from '@/components/map/MapFallback';
+import { StopMarker } from '@/components/map/StopMarker';
+import { VehicleMarker } from '@/components/map/VehicleMarker';
+
+export interface TransitMapHandle {
+  /** Recentre on a coordinate (tight zoom by default). */
+  focusOn: (coordinate: LatLng, tight?: boolean) => void;
+  /** Recentre on the user (falls back to the city if no fix). */
+  focusUser: () => void;
+  /** Recentre on Košice at the default city-level zoom. */
+  focusCity: () => void;
+}
 
 export interface TransitMapProps {
   vehicles: Vehicle[];
@@ -24,274 +35,264 @@ export interface TransitMapProps {
   onSelectStop?: (stopId: string) => void;
   modeFilter?: TransportMode | 'all';
   showStops?: boolean;
+  /** px from the bottom edge for the control stack (clears an overlay sheet). */
+  controlsBottom?: number;
+  /** Called by the "Moja poloha" button when no fix is available yet — should
+   *  (re)request the OS location permission. */
+  onRequestLocation?: () => void;
 }
 
-const MIN_SCALE = 0.55;
-const MAX_SCALE = 3.2;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const hasCoord = (l: LatLng) => l.latitude !== 0 || l.longitude !== 0;
+
+function inRegion(p: LatLng, r: Region): boolean {
+  return (
+    Math.abs(p.latitude - r.latitude) <= r.latitudeDelta / 2 + 0.004 &&
+    Math.abs(p.longitude - r.longitude) <= r.longitudeDelta / 2 + 0.004
+  );
+}
+
+function strokeForMode(mode: TransportMode): string {
+  if (mode === 'tram') return 'rgba(255,199,33,0.85)'; // accentDeep
+  if (mode === 'night') return 'rgba(107,122,144,0.7)'; // textSecondary
+  if (mode === 'rail') return 'rgba(43,98,158,0.4)';
+  return 'rgba(43,98,158,0.55)'; // primary — bus / trolleybus
+}
 
 /**
- * Lightweight schematic transit map: pan + pinch + zoom controls over an
- * SVG-drawn network with live vehicle markers. No native map SDK / API key,
- * so it runs in Expo Go and on web. Swap for `react-native-maps` or MapLibre
- * later — `project()` already gives geo→screen coordinates.
+ * Košice transit map. A real geographic base map (react-native-maps — Apple Maps
+ * on iOS, Google Maps on Android; no API key needed for Apple Maps / Expo Go)
+ * with the MHD overlay on top:
+ *
+ *   geographic map → route polylines → stop markers → live vehicles → user dot
+ *
+ * The static DPMK network (`getRouteShapes` / `getStops`) supplies real stop
+ * coordinates and route corridors; live vehicles come from the Ubian feed via
+ * the `vehicles` prop. If the native map fails to load, `MapErrorBoundary`
+ * swaps in a fallback and the rest of the screen keeps working.
  */
-export function TransitMap({
-  vehicles,
-  userLocation,
-  selectedVehicleId,
-  onSelectVehicle,
-  onSelectStop,
-  modeFilter = 'all',
-  showStops = true,
-}: TransitMapProps) {
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+function TransitMapInner(
+  {
+    vehicles,
+    userLocation,
+    selectedVehicleId,
+    onSelectVehicle,
+    onSelectStop,
+    modeFilter = 'all',
+    showStops = true,
+    controlsBottom = 32,
+    onRequestLocation,
+  }: TransitMapProps,
+  ref: React.Ref<TransitMapHandle>,
+) {
+  const mapRef = useRef<MapView>(null);
+  const regionRef = useRef<Region>(mapConfig.initialRegion);
+  const [region, setRegion] = useState<Region>(mapConfig.initialRegion);
 
-  const routeShapes = useMemo(() => getRouteShapes(), []);
-  const stops = useMemo(
-    () => getStops().filter((s) => s.location.latitude !== 0 || s.location.longitude !== 0),
-    [],
+  // --- static overlay data (computed once) ------------------------------
+  const routeShapes = useMemo(() => {
+    return getRouteShapes()
+      .filter((s) => s.points.length >= 2)
+      .map((s) => {
+        let minLat = 90;
+        let maxLat = -90;
+        let minLng = 180;
+        let maxLng = -180;
+        for (const p of s.points) {
+          if (p.latitude < minLat) minLat = p.latitude;
+          if (p.latitude > maxLat) maxLat = p.latitude;
+          if (p.longitude < minLng) minLng = p.longitude;
+          if (p.longitude > maxLng) maxLng = p.longitude;
+        }
+        return { ...s, bbox: { minLat, maxLat, minLng, maxLng } };
+      });
+  }, []);
+  const allStops = useMemo(() => getStops().filter((s) => hasCoord(s.location)), []);
+
+  // Route corridors: matching the mode filter and overlapping the viewport.
+  const visibleShapes = useMemo(() => {
+    const halfLat = region.latitudeDelta / 2 + 0.01;
+    const halfLng = region.longitudeDelta / 2 + 0.01;
+    return routeShapes.filter((s) => {
+      if (modeFilter !== 'all' && s.mode !== modeFilter) return false;
+      return (
+        s.bbox.minLat <= region.latitude + halfLat &&
+        s.bbox.maxLat >= region.latitude - halfLat &&
+        s.bbox.minLng <= region.longitude + halfLng &&
+        s.bbox.maxLng >= region.longitude - halfLng
+      );
+    });
+  }, [routeShapes, modeFilter, region]);
+
+  // Stops within the current viewport, nearest-to-centre first, capped — so the
+  // marker count stays bounded whatever the zoom.
+  const visibleStops = useMemo(() => {
+    if (!showStops || region.latitudeDelta > mapConfig.stopVisibilityLatitudeDelta) return [];
+    return allStops
+      .filter((s) => inRegion(s.location, region))
+      .map((s) => ({
+        s,
+        d:
+          (s.location.latitude - region.latitude) ** 2 +
+          (s.location.longitude - region.longitude) ** 2,
+      }))
+      .sort((a, b) => a.d - b.d)
+      .slice(0, mapConfig.maxStopMarkers)
+      .map((x) => x.s);
+  }, [showStops, region, allStops]);
+
+  // Vehicles: already mode-filtered upstream; filter again defensively + drop
+  // any without a real position.
+  const visibleVehicles = useMemo(
+    () =>
+      vehicles.filter(
+        (v) => (modeFilter === 'all' || v.mode === modeFilter) && hasCoord(v.location),
+      ),
+    [vehicles, modeFilter],
   );
 
-  // --- gesture / transform state ---------------------------------------
-  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
-  const panOffset = useRef({ x: 0, y: 0 }).current;
-  const baseScale = useRef(1);
-  const pinch = useRef(new Animated.Value(1)).current;
-  const scale = useRef(new Animated.Value(1)).current;
-  const panRef = useRef(null);
-  const pinchRef = useRef(null);
-
-  const fitScale = useMemo(() => {
-    if (!viewport.width || !viewport.height) return 1;
-    return clamp(
-      Math.min(viewport.width / WORLD_WIDTH, viewport.height / WORLD_HEIGHT) * 0.92,
-      MIN_SCALE,
-      MAX_SCALE,
+  // --- imperative focus API -------------------------------------------
+  const animateTo = useCallback((coordinate: LatLng, latitudeDelta: number) => {
+    mapRef.current?.animateToRegion(
+      {
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        latitudeDelta,
+        longitudeDelta: latitudeDelta,
+      },
+      350,
     );
-  }, [viewport]);
+  }, []);
 
-  const initialised = useRef(false);
-
-  const handleLayout = (width: number, height: number) => {
-    // Guard against re-setting an identical size — a fresh {width,height}
-    // object every layout pass would re-run dependent memos needlessly.
-    setViewport((v) => (v.width === width && v.height === height ? v : { width, height }));
-    if (initialised.current || width === 0) return;
-    initialised.current = true;
-    const fit = clamp(Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT) * 0.92, MIN_SCALE, MAX_SCALE);
-    baseScale.current = fit;
-    scale.setValue(fit);
-    const cx = (width - WORLD_WIDTH) / 2;
-    const cy = (height - WORLD_HEIGHT) / 2;
-    panOffset.x = cx;
-    panOffset.y = cy;
-    pan.setOffset({ x: cx, y: cy });
-    pan.setValue({ x: 0, y: 0 });
-  };
-
-  const onPanEvent = Animated.event(
-    [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
-    { useNativeDriver: true },
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusOn: (coordinate, tight = true) =>
+        animateTo(coordinate, tight ? mapConfig.focusLatitudeDelta : mapConfig.initialRegion.latitudeDelta),
+      focusUser: () =>
+        userLocation
+          ? animateTo(userLocation, mapConfig.focusLatitudeDelta)
+          : mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
+      focusCity: () => mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
+    }),
+    [animateTo, userLocation],
   );
 
-  const onPanStateChange = (e: PanGestureHandlerStateChangeEvent) => {
-    if (e.nativeEvent.oldState === State.ACTIVE) {
-      panOffset.x += e.nativeEvent.translationX;
-      panOffset.y += e.nativeEvent.translationY;
-      pan.setOffset({ x: panOffset.x, y: panOffset.y });
-      pan.setValue({ x: 0, y: 0 });
+  // --- controls -------------------------------------------------------
+  const zoomBy = useCallback((mult: number) => {
+    const r = regionRef.current;
+    const latitudeDelta = clamp(
+      r.latitudeDelta * mult,
+      mapConfig.minLatitudeDelta,
+      mapConfig.maxLatitudeDelta,
+    );
+    const longitudeDelta = clamp(
+      r.longitudeDelta * mult,
+      mapConfig.minLatitudeDelta,
+      mapConfig.maxLatitudeDelta,
+    );
+    mapRef.current?.animateToRegion(
+      { latitude: r.latitude, longitude: r.longitude, latitudeDelta, longitudeDelta },
+      220,
+    );
+  }, []);
+
+  const locate = useCallback(() => {
+    if (userLocation) {
+      animateTo(userLocation, mapConfig.focusLatitudeDelta);
+    } else {
+      // No fix yet — ask for permission, and meanwhile sit on the city.
+      onRequestLocation?.();
+      mapRef.current?.animateToRegion(mapConfig.initialRegion, 350);
     }
-  };
+  }, [animateTo, userLocation, onRequestLocation]);
 
-  const onPinchEvent = Animated.event([{ nativeEvent: { scale: pinch } }], { useNativeDriver: true });
+  // --- marker handlers (stable) -------------------------------------
+  const handleStop = useCallback((stopId: string) => onSelectStop?.(stopId), [onSelectStop]);
+  const focusStop = useCallback(
+    (s: { location: LatLng }) => animateTo(s.location, mapConfig.focusLatitudeDelta),
+    [animateTo],
+  );
+  const handleVehicle = useCallback(
+    (v: Vehicle) => {
+      animateTo(v.location, mapConfig.focusLatitudeDelta);
+      onSelectVehicle?.(v);
+    },
+    [animateTo, onSelectVehicle],
+  );
 
-  const onPinchStateChange = (e: PinchGestureHandlerStateChangeEvent) => {
-    if (e.nativeEvent.oldState === State.ACTIVE) {
-      baseScale.current = clamp(baseScale.current * e.nativeEvent.scale, MIN_SCALE, MAX_SCALE);
-      scale.setValue(baseScale.current);
-      pinch.setValue(1);
-    }
-  };
-
-  const zoomBy = (factor: number) => {
-    baseScale.current = clamp(baseScale.current * factor, MIN_SCALE, MAX_SCALE);
-    Animated.spring(scale, { toValue: baseScale.current, useNativeDriver: true, friction: 8 }).start();
-    pinch.setValue(1);
-  };
-
-  const recenter = () => {
-    const cx = (viewport.width - WORLD_WIDTH) / 2;
-    const cy = (viewport.height - WORLD_HEIGHT) / 2;
-    panOffset.x = cx;
-    panOffset.y = cy;
-    pan.setOffset({ x: cx, y: cy });
-    pan.setValue({ x: 0, y: 0 });
-    baseScale.current = fitScale;
-    pinch.setValue(1);
-    Animated.spring(scale, { toValue: fitScale, useNativeDriver: true, friction: 8 }).start();
-  };
-
-  const composedScale = Animated.multiply(scale, pinch);
-  const visibleVehicles = vehicles.filter((v) => modeFilter === 'all' || v.mode === modeFilter);
+  const onRegionChangeComplete = useCallback((r: Region) => {
+    regionRef.current = r;
+    // Skip a state update (and the stop-marker recompute) when the map barely
+    // moved — keeps idle re-renders out of the tree.
+    setRegion((prev) => {
+      const moved =
+        Math.abs(prev.latitude - r.latitude) > 0.0006 ||
+        Math.abs(prev.longitude - r.longitude) > 0.0006 ||
+        Math.abs(prev.latitudeDelta - r.latitudeDelta) > 0.0006;
+      return moved ? r : prev;
+    });
+  }, []);
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: colors.mapLand, overflow: 'hidden' }}
-      onLayout={(e) => handleLayout(e.nativeEvent.layout.width, e.nativeEvent.layout.height)}
-    >
-      <PinchGestureHandler
-        ref={pinchRef}
-        simultaneousHandlers={panRef}
-        onGestureEvent={onPinchEvent}
-        onHandlerStateChange={onPinchStateChange}
-      >
-        <Animated.View style={{ flex: 1 }}>
-          <PanGestureHandler
-            ref={panRef}
-            simultaneousHandlers={pinchRef}
-            minDist={2}
-            onGestureEvent={onPanEvent}
-            onHandlerStateChange={onPanStateChange}
-          >
-            <Animated.View style={{ flex: 1 }}>
-              <Animated.View
-                style={{
-                  width: WORLD_WIDTH,
-                  height: WORLD_HEIGHT,
-                  transform: [{ translateX: pan.x }, { translateY: pan.y }, { scale: composedScale }],
-                }}
-              >
-                <Svg width={WORLD_WIDTH} height={WORLD_HEIGHT}>
-                  {/* schematic land / water shapes */}
-                  <Rect x={0} y={0} width={WORLD_WIDTH} height={WORLD_HEIGHT} fill={colors.mapLand} />
-                  <Rect
-                    x={WORLD_WIDTH * 0.62}
-                    y={-40}
-                    width={90}
-                    height={WORLD_HEIGHT + 80}
-                    fill={colors.mapWater}
-                    opacity={0.7}
-                  />
-                  <Rect
-                    x={-40}
-                    y={WORLD_HEIGHT * 0.44}
-                    width={WORLD_WIDTH + 80}
-                    height={70}
-                    fill={colors.mapLandAlt}
-                  />
+    <MapErrorBoundary fallback={<MapUnavailable />}>
+      <View style={{ flex: 1, backgroundColor: colors.mapLand }}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFill}
+          initialRegion={mapConfig.initialRegion}
+          onRegionChangeComplete={onRegionChangeComplete}
+          showsUserLocation={!!userLocation}
+          showsMyLocationButton={false}
+          showsPointsOfInterest
+          showsBuildings
+          showsCompass={false}
+          showsScale={false}
+          showsTraffic={false}
+          toolbarEnabled={false}
+          moveOnMarkerPress={false}
+          pitchEnabled={false}
+          rotateEnabled
+          loadingEnabled
+          loadingBackgroundColor={colors.mapLand}
+          loadingIndicatorColor={colors.primary}
+          mapPadding={{ top: 132, right: 8, bottom: Math.max(0, controlsBottom - 8), left: 8 }}
+        >
+          {visibleShapes.map((s) => (
+            <Polyline
+              key={s.routeId}
+              coordinates={s.points}
+              strokeColor={strokeForMode(s.mode)}
+              strokeWidth={s.mode === 'tram' ? 3 : 2.5}
+              lineCap="round"
+              lineJoin="round"
+            />
+          ))}
 
-                  {/* route polylines */}
-                  {routeShapes
-                    .filter((r) => modeFilter === 'all' || r.mode === modeFilter)
-                    .map((shape) => {
-                      const pts = shape.points
-                        .map((p) => {
-                          const { x, y } = project(p);
-                          return `${x},${y}`;
-                        })
-                        .join(' ');
-                      return (
-                        <Polyline
-                          key={shape.routeId}
-                          points={pts}
-                          fill="none"
-                          stroke={shape.mode === 'tram' ? colors.accentDeep : colors.primary}
-                          strokeOpacity={0.55}
-                          strokeWidth={5}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      );
-                    })}
+          {visibleStops.map((s) => (
+            <StopMarker key={s.id} stop={s} onOpen={handleStop} onFocus={focusStop} />
+          ))}
 
-                  {/* stops */}
-                  {showStops &&
-                    stops.map((stop) => {
-                      const { x, y } = project(stop.location);
-                      return (
-                        <Circle
-                          key={stop.id}
-                          cx={x}
-                          cy={y}
-                          r={5}
-                          fill={colors.white}
-                          stroke={colors.primary}
-                          strokeWidth={3}
-                          onPress={() => onSelectStop?.(stop.id)}
-                        />
-                      );
-                    })}
+          {visibleVehicles.map((v) => (
+            <VehicleMarker
+              key={v.id}
+              vehicle={v}
+              selected={v.id === selectedVehicleId}
+              onPress={handleVehicle}
+            />
+          ))}
+        </MapView>
 
-                  {userLocation
-                    ? (() => {
-                        const { x, y } = project(userLocation);
-                        return <Circle cx={x} cy={y} r={8} fill={colors.primary} stroke={colors.white} strokeWidth={4} />;
-                      })()
-                    : null}
-                </Svg>
-
-                {/* vehicle markers (Pressable overlay) */}
-                {visibleVehicles.map((v) => {
-                  const { x, y } = project(v.location);
-                  const selected = v.id === selectedVehicleId;
-                  const c = modeColors[v.mode];
-                  return (
-                    <Pressable
-                      key={v.id}
-                      onPress={() => onSelectVehicle?.(v)}
-                      style={{
-                        position: 'absolute',
-                        left: x - 17,
-                        top: y - 17,
-                        width: 34,
-                        height: 34,
-                        borderRadius: 12,
-                        backgroundColor: c.bg,
-                        borderWidth: 3,
-                        borderColor: selected ? colors.text : colors.white,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        ...shadows.float,
-                      }}
-                    >
-                      <Text variant="caption" weight="extrabold" color={c.fg}>
-                        {v.routeShortName}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </Animated.View>
-            </Animated.View>
-          </PanGestureHandler>
-        </Animated.View>
-      </PinchGestureHandler>
-
-      {/* zoom / recenter controls */}
-      <View style={{ position: 'absolute', right: 14, bottom: 14, gap: 8 }}>
-        <MapButton icon="add" onPress={() => zoomBy(1.4)} />
-        <MapButton icon="remove" onPress={() => zoomBy(1 / 1.4)} />
-        <MapButton icon="locate" onPress={recenter} />
+        <MapControls
+          onZoomIn={() => zoomBy(0.5)}
+          onZoomOut={() => zoomBy(2)}
+          onLocate={locate}
+          bottom={controlsBottom}
+          locateActive={!!userLocation}
+        />
       </View>
-    </View>
+    </MapErrorBoundary>
   );
 }
 
-function MapButton({ icon, onPress }: { icon: React.ComponentProps<typeof Ionicons>['name']; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        width: 42,
-        height: 42,
-        borderRadius: 13,
-        backgroundColor: colors.surface,
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...shadows.float,
-      }}
-    >
-      <Ionicons name={icon} size={20} color={colors.primary} />
-    </Pressable>
-  );
-}
+export const TransitMap = forwardRef(TransitMapInner);

@@ -180,6 +180,26 @@ function delayStatus(minutes: number): DelayStatus {
   return { minutes: m, label: `+${m} min`, onTime: false };
 }
 
+/**
+ * MHD Košice line labels from an Ubian `ezLines` array.
+ *
+ * The feed mixes in a `"- "` placeholder (repeated 2–4× at central stops during
+ * the tram-replacement period), regional-bus codes (`"866"`, `"Os 6401"`),
+ * express/rail labels (`"Ex 620"`, `"REX 1900"`) and 5–6 digit internal ids.
+ * We keep only real MHD labels (`1`–`99`, optional letter suffix like `23a` /
+ * `52č` / `26P`, plus `N1`–`N9`, `R1`–`R9`, `RA1`–`RA9`, `s1`/`s2`, `X`, `XR`)
+ * and de-duplicate — otherwise `<RouteBadge key={line}>` gets duplicate keys.
+ */
+function mhdLineLabels(ezLines: string[] | undefined): string[] {
+  const out: string[] = [];
+  for (const raw of ezLines ?? []) {
+    const l = String(raw).trim();
+    if (!/^(\d{1,2}[a-zč]?|N\d{1,2}|RA?\d{1,2}|s[12]|X\d?|XR)$/i.test(l)) continue;
+    if (!out.includes(l)) out.push(l);
+  }
+  return out;
+}
+
 function stopLocation(s: UbianStop): LatLng {
   if (s.latitude != null && s.longitude != null) return { latitude: s.latitude, longitude: s.longitude };
   const pts = s.platforms.filter((p) => p.latitude != null && p.longitude != null);
@@ -204,8 +224,7 @@ function mapStop(s: UbianStop): Stop {
     name: s.stopName.replace(/\s+/g, ' ').trim(),
     mode: stopMode(s),
     location: stopLocation(s),
-    // Drop 6-digit regional-bus internal codes — keep MHD-style labels ("12", "N2", "R1").
-    lines: (s.ezLines ?? []).filter((l) => l.length <= 4 && !/^\d{5,}$/.test(l)),
+    lines: mhdLineLabels(s.ezLines),
     zone: 1,
   };
 }
@@ -346,9 +365,14 @@ export const ubianService = {
         radius: radiusMeters,
       }),
     );
+    // The feed lists a vehicle once per active trip, so a bus mid-changeover
+    // appears twice with the same vehicleID. De-duplicate by id (keep the first)
+    // so `key={vehicle.id}` stays unique in the list and on the map.
+    const seen = new Set<string>();
     return (json.vehicles ?? [])
       .filter((v) => !v.timeTableTrip?.canceled && v.latitude && v.longitude)
-      .map(mapVehicle);
+      .map(mapVehicle)
+      .filter((v) => (seen.has(v.id) ? false : (seen.add(v.id), true)));
   },
 
   async getTripStops(rawTripId: number): Promise<UbianTripStop[]> {
