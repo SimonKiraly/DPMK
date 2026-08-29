@@ -9,6 +9,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Text } from '@/components/ui/Text';
 import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
 import { TransitMap } from '@/components/map/TransitMap';
+import { MapErrorBoundary } from '@/components/map/MapFallback';
 import { colors, shadows } from '@/constants/theme';
 import { useLiveVehicles } from '@/hooks/useLiveVehicles';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
@@ -29,23 +30,31 @@ export function LiveMapScreen() {
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<TransportMode | 'all'>('all');
   const [sheetHeight, setSheetHeight] = useState(220);
-  const vehicles = useLiveVehicles({ mode });
+  // The map gets the whole fleet and hides non-matching markers itself (so a
+  // filter tap never adds/removes map overlays); the sheet shows the count that
+  // matches the current filter.
+  const vehicles = useLiveVehicles();
   const { stops, origin, usingFallback, requestPermission } = useNearbyStops({ limit: 4 });
 
-  const visibleCount = vehicles.length;
+  const visibleCount = useMemo(
+    () => (mode === 'all' ? vehicles.length : vehicles.filter((v) => v.mode === mode).length),
+    [vehicles, mode],
+  );
   const nearbyPreview = useMemo(() => stops.slice(0, 3), [stops]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.mapLand }}>
-      <TransitMap
-        vehicles={vehicles}
-        modeFilter={mode}
-        userLocation={usingFallback ? null : origin}
-        onRequestLocation={requestPermission}
-        controlsBottom={sheetHeight + 12}
-        onSelectVehicle={(v) => navigation.navigate('VehicleDetail', { vehicleId: v.id })}
-        onSelectStop={(stopId) => navigation.navigate('StopDetail', { stopId })}
-      />
+      <MapErrorBoundary>
+        <TransitMap
+          vehicles={vehicles}
+          modeFilter={mode}
+          userLocation={usingFallback ? null : origin}
+          onRequestLocation={requestPermission}
+          controlsBottom={sheetHeight + 12}
+          onSelectVehicle={(v) => navigation.navigate('VehicleDetail', { vehicleId: v.id })}
+          onSelectStop={(stopId) => navigation.navigate('StopDetail', { stopId })}
+        />
+      </MapErrorBoundary>
 
       {/* top controls */}
       <View style={{ position: 'absolute', left: 16, right: 16, top: insets.top + 8 }}>

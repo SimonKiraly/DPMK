@@ -9,6 +9,10 @@ import type { Vehicle } from '@/types';
 interface Props {
   vehicle: Vehicle;
   selected: boolean;
+  /** Filtered out by the mode chips — kept mounted but invisible so the marker
+   *  set never churns on a filter change (react-native-maps + New Arch crashes
+   *  when many overlays are added/removed at once). */
+  hidden?: boolean;
   onPress: (vehicle: Vehicle) => void;
 }
 
@@ -21,18 +25,23 @@ interface Props {
  * view on each parent render. The marker still moves natively when `coordinate`
  * updates (every ~15 s poll) without re-rendering its content.
  */
-function VehicleMarkerBase({ vehicle, selected, onPress }: Props) {
+function VehicleMarkerBase({ vehicle, selected, hidden = false, onPress }: Props) {
   const [tracks, setTracks] = useState(true);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // A hidden (filtered-out) marker never needs to rasterise its view.
+    if (hidden) {
+      setTracks(false);
+      return;
+    }
     setTracks(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setTracks(false), 600);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [vehicle.routeShortName, vehicle.mode, selected]);
+  }, [vehicle.routeShortName, vehicle.mode, selected, hidden]);
 
   const c = modeColors[vehicle.mode] ?? modeColors.bus;
 
@@ -40,9 +49,10 @@ function VehicleMarkerBase({ vehicle, selected, onPress }: Props) {
     <Marker
       coordinate={vehicle.location}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={tracks}
-      zIndex={selected ? 30 : 6}
-      onPress={() => onPress(vehicle)}
+      tracksViewChanges={tracks && !hidden}
+      opacity={hidden ? 0 : 1}
+      zIndex={hidden ? 0 : selected ? 30 : 6}
+      onPress={hidden ? undefined : () => onPress(vehicle)}
       // Apple Maps recycles annotation views; a stable identifier keeps the
       // right badge attached to the right vehicle.
       identifier={vehicle.id}
@@ -73,6 +83,7 @@ export const VehicleMarker = memo(
   VehicleMarkerBase,
   (a, b) =>
     a.selected === b.selected &&
+    a.hidden === b.hidden &&
     a.onPress === b.onPress &&
     a.vehicle.id === b.vehicle.id &&
     a.vehicle.routeShortName === b.vehicle.routeShortName &&

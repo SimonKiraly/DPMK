@@ -44,6 +44,7 @@ export interface TransitMapProps {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const hasCoord = (l: LatLng) => l.latitude !== 0 || l.longitude !== 0;
+const HIDDEN_STROKE = 'rgba(0,0,0,0)';
 
 function inRegion(p: LatLng, r: Region): boolean {
   return (
@@ -90,42 +91,19 @@ function TransitMapInner(
   const [region, setRegion] = useState<Region>(mapConfig.initialRegion);
 
   // --- static overlay data (computed once) ------------------------------
-  const routeShapes = useMemo(() => {
-    return getRouteShapes()
-      .filter((s) => s.points.length >= 2)
-      .map((s) => {
-        let minLat = 90;
-        let maxLat = -90;
-        let minLng = 180;
-        let maxLng = -180;
-        for (const p of s.points) {
-          if (p.latitude < minLat) minLat = p.latitude;
-          if (p.latitude > maxLat) maxLat = p.latitude;
-          if (p.longitude < minLng) minLng = p.longitude;
-          if (p.longitude > maxLng) maxLng = p.longitude;
-        }
-        return { ...s, bbox: { minLat, maxLat, minLng, maxLng } };
-      });
-  }, []);
+  // Every route corridor is rendered once and kept mounted for the life of the
+  // map; the mode filter only changes each Polyline's stroke, never the set of
+  // children. react-native-maps (1.20 / New Architecture, as shipped in Expo Go
+  // SDK 54) crashes when many overlays are added or removed in one commit —
+  // which is exactly what happened when a filter dropped ~50 bus polylines.
+  const routeShapes = useMemo(
+    () => getRouteShapes().filter((s) => s.points.length >= 2),
+    [],
+  );
   const allStops = useMemo(() => getStops().filter((s) => hasCoord(s.location)), []);
 
-  // Route corridors: matching the mode filter and overlapping the viewport.
-  const visibleShapes = useMemo(() => {
-    const halfLat = region.latitudeDelta / 2 + 0.01;
-    const halfLng = region.longitudeDelta / 2 + 0.01;
-    return routeShapes.filter((s) => {
-      if (modeFilter !== 'all' && s.mode !== modeFilter) return false;
-      return (
-        s.bbox.minLat <= region.latitude + halfLat &&
-        s.bbox.maxLat >= region.latitude - halfLat &&
-        s.bbox.minLng <= region.longitude + halfLng &&
-        s.bbox.maxLng >= region.longitude - halfLng
-      );
-    });
-  }, [routeShapes, modeFilter, region]);
-
-  // Stops within the current viewport, nearest-to-centre first, capped — so the
-  // marker count stays bounded whatever the zoom.
+  // Stops within the current viewport, nearest-to-centre first, capped — bounded
+  // and only churns a few markers at a time while panning.
   const visibleStops = useMemo(() => {
     if (!showStops || region.latitudeDelta > mapConfig.stopVisibilityLatitudeDelta) return [];
     return allStops
@@ -141,14 +119,15 @@ function TransitMapInner(
       .map((x) => x.s);
   }, [showStops, region, allStops]);
 
-  // Vehicles: already mode-filtered upstream; filter again defensively + drop
-  // any without a real position.
-  const visibleVehicles = useMemo(
-    () =>
-      vehicles.filter(
-        (v) => (modeFilter === 'all' || v.mode === modeFilter) && hasCoord(v.location),
-      ),
-    [vehicles, modeFilter],
+  // One marker per vehicle currently in the feed. The filter only hides markers
+  // (opacity 0) — it never removes them — so a filter tap can't churn the set.
+  const drawnVehicles = useMemo(
+    () => vehicles.filter((v) => hasCoord(v.location)),
+    [vehicles],
+  );
+  const matchesFilter = useCallback(
+    (mode: TransportMode) => modeFilter === 'all' || mode === modeFilter,
+    [modeFilter],
   );
 
   // --- imperative focus API -------------------------------------------
@@ -258,26 +237,31 @@ function TransitMapInner(
           loadingIndicatorColor={colors.primary}
           mapPadding={{ top: 132, right: 8, bottom: Math.max(0, controlsBottom - 8), left: 8 }}
         >
-          {visibleShapes.map((s) => (
-            <Polyline
-              key={s.routeId}
-              coordinates={s.points}
-              strokeColor={strokeForMode(s.mode)}
-              strokeWidth={s.mode === 'tram' ? 3 : 2.5}
-              lineCap="round"
-              lineJoin="round"
-            />
-          ))}
+          {routeShapes.map((s) => {
+            const on = matchesFilter(s.mode);
+            return (
+              <Polyline
+                key={s.routeId}
+                coordinates={s.points}
+                strokeColor={on ? strokeForMode(s.mode) : HIDDEN_STROKE}
+                strokeWidth={on ? (s.mode === 'tram' ? 3 : 2.5) : 0.5}
+                lineCap="round"
+                lineJoin="round"
+                tappable={false}
+              />
+            );
+          })}
 
           {visibleStops.map((s) => (
             <StopMarker key={s.id} stop={s} onOpen={handleStop} onFocus={focusStop} />
           ))}
 
-          {visibleVehicles.map((v) => (
+          {drawnVehicles.map((v) => (
             <VehicleMarker
               key={v.id}
               vehicle={v}
               selected={v.id === selectedVehicleId}
+              hidden={!matchesFilter(v.mode)}
               onPress={handleVehicle}
             />
           ))}
