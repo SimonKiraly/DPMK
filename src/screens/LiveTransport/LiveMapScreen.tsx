@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Chip } from '@/components/ui/Chip';
 import { RouteBadge } from '@/components/ui/RouteBadge';
 import { SearchField } from '@/components/ui/SearchField';
 import { Text } from '@/components/ui/Text';
 import { TransportStatusBanner } from '@/components/ui/TransportStatusBanner';
-import { TransitMap } from '@/components/map/TransitMap';
+import { MapControls } from '@/components/map/MapControls';
 import { MapErrorBoundary } from '@/components/map/MapFallback';
-import { colors, shadows } from '@/constants/theme';
+import { TransitMap, type TransitMapHandle } from '@/components/map/TransitMap';
+import { colors } from '@/constants/theme';
 import { useLiveVehicles } from '@/hooks/useLiveVehicles';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
 import { stopLabel } from '@/data/stops';
@@ -25,14 +27,18 @@ const FILTERS: { value: TransportMode | 'all'; label: string }[] = [
   { value: 'night', label: 'Nočné' },
 ];
 
+/** collapsed / half / expanded — fractions of the screen height. */
+const SHEET_SNAPS = [0.22, 0.5, 0.86];
+
 export function LiveMapScreen() {
   const navigation = useRootNavigation();
   const insets = useSafeAreaInsets();
+  const { height: winH } = useWindowDimensions();
+  const mapRef = useRef<TransitMapHandle>(null);
   const [mode, setMode] = useState<TransportMode | 'all'>('all');
-  const [sheetHeight, setSheetHeight] = useState(220);
-  // The map gets the whole fleet and hides non-matching markers itself (so a
-  // filter tap never adds/removes map overlays); the sheet shows the count that
-  // matches the current filter.
+
+  // The map gets the whole fleet and hides non-matching markers itself; the
+  // sheet header shows the count that matches the current filter.
   const vehicles = useLiveVehicles();
   const { stops, origin, usingFallback, requestPermission } = useNearbyStops({ limit: 4 });
 
@@ -42,15 +48,32 @@ export function LiveMapScreen() {
   );
   const nearbyPreview = useMemo(() => stops.slice(0, 3), [stops]);
 
+  const sheetHeader = (
+    <>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <Text variant="sectionTitle">Vo vašom okolí</Text>
+        <Pressable onPress={() => navigation.navigate('NearbyStops')} hitSlop={8}>
+          <Text variant="caption" weight="bold" color={colors.primary}>
+            Zoznam
+          </Text>
+        </Pressable>
+      </View>
+      <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
+        {visibleCount} vozidiel naživo
+      </Text>
+    </>
+  );
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.mapLand }}>
       <MapErrorBoundary>
         <TransitMap
+          ref={mapRef}
           vehicles={vehicles}
           modeFilter={mode}
           userLocation={usingFallback ? null : origin}
           onRequestLocation={requestPermission}
-          controlsBottom={sheetHeight + 12}
+          bottomInset={Math.round(winH * SHEET_SNAPS[0]) + 8}
           onSelectVehicle={(v) => navigation.navigate('VehicleDetail', { vehicleId: v.id })}
           onSelectStop={(stopId) => navigation.navigate('StopDetail', { stopId })}
         />
@@ -75,40 +98,20 @@ export function LiveMapScreen() {
         <TransportStatusBanner style={{ marginTop: 8 }} />
       </View>
 
-      {/* bottom sheet */}
-      <View
-        onLayout={(e) => {
-          const h = e.nativeEvent.layout.height;
-          setSheetHeight((prev) => (Math.abs(prev - h) > 1 ? h : prev));
-        }}
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: colors.surface,
-          borderTopLeftRadius: 26,
-          borderTopRightRadius: 26,
-          paddingTop: 12,
-          paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 12,
-          ...shadows.float,
-        }}
+      <BottomSheet
+        snapPoints={SHEET_SNAPS}
+        initialIndex={1}
+        header={sheetHeader}
+        floating={
+          <MapControls
+            onZoomIn={() => mapRef.current?.zoomIn()}
+            onZoomOut={() => mapRef.current?.zoomOut()}
+            onLocate={() => mapRef.current?.recenter()}
+            locateActive={!usingFallback}
+          />
+        }
       >
-        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE3EB', alignSelf: 'center', marginBottom: 12 }} />
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <Text variant="sectionTitle">Vo vašom okolí</Text>
-          <Pressable onPress={() => navigation.navigate('NearbyStops')} hitSlop={8}>
-            <Text variant="caption" weight="bold" color={colors.primary}>
-              Zoznam
-            </Text>
-          </Pressable>
-        </View>
-        <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>
-          {visibleCount} vozidiel naživo
-        </Text>
-
-        <View style={{ marginTop: 10, gap: 8 }}>
+        <View style={{ marginTop: 12, gap: 8 }}>
           {nearbyPreview.map((n) => (
             <Pressable
               key={n.stop.id}
@@ -155,7 +158,7 @@ export function LiveMapScreen() {
             </Pressable>
           ))}
         </View>
-      </View>
+      </BottomSheet>
     </View>
   );
 }

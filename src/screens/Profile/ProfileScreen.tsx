@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { GradientHeader } from '@/components/ui/GradientHeader';
 import { ListRow } from '@/components/ui/ListRow';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { colors } from '@/constants/theme';
@@ -112,43 +113,31 @@ export function ProfileScreen() {
       </View>
 
       {/* edit personal details */}
-      <Modal transparent visible={editing} animationType="slide" onRequestClose={() => setEditing(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setEditing(false)} />
-        <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 40, gap: 12 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE3EB', alignSelf: 'center' }} />
-          <Text variant="sectionTitle">Osobné údaje</Text>
-          <TextField label="Meno a priezvisko" value={form.fullName} onChangeText={(v) => setForm({ ...form, fullName: v })} />
-          <TextField label="E-mail" value={form.email} keyboardType="email-address" autoCapitalize="none" onChangeText={(v) => setForm({ ...form, email: v })} />
-          <TextField label="Telefón" value={form.phone} keyboardType="phone-pad" onChangeText={(v) => setForm({ ...form, phone: v })} />
-          <Button label="Uložiť zmeny" variant="accent" onPress={save} />
-        </View>
-      </Modal>
+      <ModalSheet visible={editing} onClose={() => setEditing(false)} title="Osobné údaje" contentStyle={{ gap: 12 }}>
+        <TextField label="Meno a priezvisko" value={form.fullName} onChangeText={(v) => setForm({ ...form, fullName: v })} />
+        <TextField label="E-mail" value={form.email} keyboardType="email-address" autoCapitalize="none" onChangeText={(v) => setForm({ ...form, email: v })} />
+        <TextField label="Telefón" value={form.phone} keyboardType="phone-pad" onChangeText={(v) => setForm({ ...form, phone: v })} />
+        <Button label="Uložiť zmeny" variant="accent" onPress={save} />
+      </ModalSheet>
 
       {/* discount picker */}
-      <Modal transparent visible={discountPicker} animationType="slide" onRequestClose={() => setDiscountPicker(false)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setDiscountPicker(false)} />
-        <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 40, gap: 4 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE3EB', alignSelf: 'center', marginBottom: 8 }} />
-          <Text variant="sectionTitle" style={{ marginBottom: 8 }}>
-            Nárok na zľavu
-          </Text>
-          {DISCOUNTS.map((d) => (
-            <Pressable
-              key={d.value}
-              onPress={() => {
-                setDiscount(d.value);
-                setDiscountPicker(false);
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}
-            >
-              <Text variant="body" weight="bold">
-                {d.label}
-              </Text>
-              {user.discount === d.value ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
-            </Pressable>
-          ))}
-        </View>
-      </Modal>
+      <ModalSheet visible={discountPicker} onClose={() => setDiscountPicker(false)} title="Nárok na zľavu">
+        {DISCOUNTS.map((d) => (
+          <Pressable
+            key={d.value}
+            onPress={() => {
+              setDiscount(d.value);
+              setDiscountPicker(false);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}
+          >
+            <Text variant="body" weight="bold">
+              {d.label}
+            </Text>
+            {user.discount === d.value ? <Ionicons name="checkmark-circle" size={20} color={colors.primary} /> : null}
+          </Pressable>
+        ))}
+      </ModalSheet>
     </View>
   );
 }

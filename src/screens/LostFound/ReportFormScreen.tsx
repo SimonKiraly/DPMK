@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Image, Modal, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import type { RouteProp } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { useRoute } from '@react-navigation/native';
 
 import { AppHeader } from '@/components/ui/AppHeader';
 import { Button } from '@/components/ui/Button';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Screen } from '@/components/ui/Screen';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
@@ -174,25 +175,21 @@ export function ReportFormScreen() {
         ) : null}
       </View>
 
-      <Modal transparent visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setPicker(null)} />
-        <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 40, maxHeight: '60%' }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE3EB', alignSelf: 'center', marginBottom: 12 }} />
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {options.map((opt) => (
-              <Pressable
-                key={opt.value}
-                onPress={() => applyOption(opt.value)}
-                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F2F5F9' }}
-              >
-                <Text variant="body" weight="bold">
-                  {opt.label}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
+      <ModalSheet visible={picker !== null} onClose={() => setPicker(null)}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {options.map((opt) => (
+            <Pressable
+              key={opt.value}
+              onPress={() => applyOption(opt.value)}
+              style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F2F5F9' }}
+            >
+              <Text variant="body" weight="bold">
+                {opt.label}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </ModalSheet>
     </Screen>
   );
 }

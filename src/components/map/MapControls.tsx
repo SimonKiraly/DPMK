@@ -7,16 +7,18 @@ interface Props {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onLocate: () => void;
-  /** Distance from the bottom edge — set to clear the LiveMap bottom sheet. */
-  bottom: number;
   /** Whether the "my location" button shows as active (permission granted). */
   locateActive?: boolean;
 }
 
-/** Minimal map control stack: zoom in / out / recenter — matches the app UI. */
-export function MapControls({ onZoomIn, onZoomOut, onLocate, bottom, locateActive }: Props) {
+/**
+ * Minimal map control stack: zoom in / out / recenter. Laid out by its parent
+ * (the map screen renders it in the bottom sheet's floating slot so it rides the
+ * sheet's top edge).
+ */
+export function MapControls({ onZoomIn, onZoomOut, onLocate, locateActive }: Props) {
   return (
-    <View style={{ position: 'absolute', right: 14, bottom, gap: 8 }}>
+    <View style={{ gap: 8, alignItems: 'flex-end' }}>
       <View style={{ borderRadius: 14, overflow: 'hidden', ...shadows.float }}>
         <ControlButton icon="add" onPress={onZoomIn} />
         <View style={{ height: 1, backgroundColor: colors.border }} />

@@ -15,3 +15,6 @@ export { IconCircle } from '@/components/ui/IconCircle';
 export { SectionHeading } from '@/components/ui/SectionHeading';
 export { ListRow } from '@/components/ui/ListRow';
 export { LoadingState, ErrorState, EmptyState } from '@/components/ui/StateViews';
+export { BottomSheet, type BottomSheetHandle } from '@/components/ui/BottomSheet';
+export { ModalSheet } from '@/components/ui/ModalSheet';
+export { SheetHandle } from '@/components/ui/SheetHandle';

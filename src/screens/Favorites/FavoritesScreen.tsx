@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppHeader } from '@/components/ui/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ModalSheet } from '@/components/ui/ModalSheet';
 import { RouteBadge } from '@/components/ui/RouteBadge';
 import { Screen } from '@/components/ui/Screen';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -169,33 +170,28 @@ export function FavoritesScreen() {
         ) : null}
       </View>
 
-      <Modal transparent visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
-        <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setPicker(null)} />
-        <View style={{ backgroundColor: colors.surface, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 40, gap: 8 }}>
-          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE3EB', alignSelf: 'center', marginBottom: 8 }} />
-          <Text variant="sectionTitle">Vyberte miesto</Text>
-          {PLACES.slice(0, 8).map((p) => (
-            <Pressable
-              key={p.id}
-              onPress={() => {
-                if (picker) setPlaceFromPlaceId(picker, p.id);
-                setPicker(null);
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
-            >
-              <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text variant="body" weight="bold">
-                  {p.name}
-                </Text>
-                <Text variant="caption" color={colors.textTertiary}>
-                  {p.subtitle}
-                </Text>
-              </View>
-            </Pressable>
-          ))}
-        </View>
-      </Modal>
+      <ModalSheet visible={picker !== null} onClose={() => setPicker(null)} title="Vyberte miesto">
+        {PLACES.slice(0, 8).map((p) => (
+          <Pressable
+            key={p.id}
+            onPress={() => {
+              if (picker) setPlaceFromPlaceId(picker, p.id);
+              setPicker(null);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
+          >
+            <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+            <View style={{ flex: 1 }}>
+              <Text variant="body" weight="bold">
+                {p.name}
+              </Text>
+              <Text variant="caption" color={colors.textTertiary}>
+                {p.subtitle}
+              </Text>
+            </View>
+          </Pressable>
+        ))}
+      </ModalSheet>
     </Screen>
   );
 }

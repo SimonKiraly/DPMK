@@ -13,7 +13,6 @@ import { colors } from '@/constants/theme';
 import { mapConfig } from '@/constants/config';
 import { getRouteShapes, getStops } from '@/services/transportService';
 import type { LatLng, TransportMode, Vehicle } from '@/types';
-import { MapControls } from '@/components/map/MapControls';
 import { MapErrorBoundary, MapUnavailable } from '@/components/map/MapFallback';
 import { StopMarker } from '@/components/map/StopMarker';
 import { VehicleMarker } from '@/components/map/VehicleMarker';
@@ -25,6 +24,11 @@ export interface TransitMapHandle {
   focusUser: () => void;
   /** Recentre on Košice at the default city-level zoom. */
   focusCity: () => void;
+  /** Map controls — driven by the floating buttons on the map screen. */
+  zoomIn: () => void;
+  zoomOut: () => void;
+  /** "Moja poloha" — go to the user, or request permission if there's no fix. */
+  recenter: () => void;
 }
 
 export interface TransitMapProps {
@@ -35,8 +39,9 @@ export interface TransitMapProps {
   onSelectStop?: (stopId: string) => void;
   modeFilter?: TransportMode | 'all';
   showStops?: boolean;
-  /** px from the bottom edge for the control stack (clears an overlay sheet). */
-  controlsBottom?: number;
+  /** Bottom inset for the native map (keeps the provider attribution above an
+   *  overlaying bottom sheet). */
+  bottomInset?: number;
   /** Called by the "Moja poloha" button when no fix is available yet — should
    *  (re)request the OS location permission. */
   onRequestLocation?: () => void;
@@ -81,7 +86,7 @@ function TransitMapInner(
     onSelectStop,
     modeFilter = 'all',
     showStops = true,
-    controlsBottom = 32,
+    bottomInset = 0,
     onRequestLocation,
   }: TransitMapProps,
   ref: React.Ref<TransitMapHandle>,
@@ -143,20 +148,6 @@ function TransitMapInner(
     );
   }, []);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      focusOn: (coordinate, tight = true) =>
-        animateTo(coordinate, tight ? mapConfig.focusLatitudeDelta : mapConfig.initialRegion.latitudeDelta),
-      focusUser: () =>
-        userLocation
-          ? animateTo(userLocation, mapConfig.focusLatitudeDelta)
-          : mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
-      focusCity: () => mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
-    }),
-    [animateTo, userLocation],
-  );
-
   // --- controls -------------------------------------------------------
   const zoomBy = useCallback((mult: number) => {
     const r = regionRef.current;
@@ -185,6 +176,23 @@ function TransitMapInner(
       mapRef.current?.animateToRegion(mapConfig.initialRegion, 350);
     }
   }, [animateTo, userLocation, onRequestLocation]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusOn: (coordinate, tight = true) =>
+        animateTo(coordinate, tight ? mapConfig.focusLatitudeDelta : mapConfig.initialRegion.latitudeDelta),
+      focusUser: () =>
+        userLocation
+          ? animateTo(userLocation, mapConfig.focusLatitudeDelta)
+          : mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
+      focusCity: () => mapRef.current?.animateToRegion(mapConfig.initialRegion, 350),
+      zoomIn: () => zoomBy(0.5),
+      zoomOut: () => zoomBy(2),
+      recenter: locate,
+    }),
+    [animateTo, userLocation, zoomBy, locate],
+  );
 
   // --- marker handlers (stable) -------------------------------------
   const handleStop = useCallback((stopId: string) => onSelectStop?.(stopId), [onSelectStop]);
@@ -235,7 +243,7 @@ function TransitMapInner(
           loadingEnabled
           loadingBackgroundColor={colors.mapLand}
           loadingIndicatorColor={colors.primary}
-          mapPadding={{ top: 132, right: 8, bottom: Math.max(0, controlsBottom - 8), left: 8 }}
+          mapPadding={{ top: 132, right: 8, bottom: Math.max(8, bottomInset), left: 8 }}
         >
           {routeShapes.map((s) => {
             const on = matchesFilter(s.mode);
@@ -266,14 +274,6 @@ function TransitMapInner(
             />
           ))}
         </MapView>
-
-        <MapControls
-          onZoomIn={() => zoomBy(0.5)}
-          onZoomOut={() => zoomBy(2)}
-          onLocate={locate}
-          bottom={controlsBottom}
-          locateActive={!!userLocation}
-        />
       </View>
     </MapErrorBoundary>
   );
