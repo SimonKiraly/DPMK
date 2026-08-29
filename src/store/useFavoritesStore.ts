@@ -45,33 +45,43 @@ export const useFavoritesStore = create<FavoritesState>()(
       },
 
       toggleStop(stopId) {
+        // Removal must work even if the stop id is no longer in the network
+        // (e.g. a favourite saved before a timetable update).
+        const existing = get().favorites.find((f) => f.kind === 'stop' && f.stopId === stopId);
+        if (existing) {
+          set((s) => ({ favorites: s.favorites.filter((f) => f.id !== existing.id) }));
+          return;
+        }
         const stop = getStop(stopId);
         if (!stop) return;
-        set((s) => {
-          const existing = s.favorites.find((f) => f.kind === 'stop' && f.stopId === stopId);
-          if (existing) return { favorites: s.favorites.filter((f) => f.id !== existing.id) };
-          return {
-            favorites: [
-              {
-                kind: 'stop',
-                id: createId('fav'),
-                stopId,
-                name: stop.name,
-                lines: stop.lines,
-                addedAt: new Date().toISOString(),
-              },
-              ...s.favorites,
-            ],
-          };
-        });
+        set((s) => ({
+          favorites: [
+            {
+              kind: 'stop',
+              id: createId('fav'),
+              stopId,
+              name: stop.name,
+              lines: stop.lines,
+              addedAt: new Date().toISOString(),
+            },
+            ...s.favorites,
+          ],
+        }));
       },
 
       toggleRoute(routeShortName, headsign) {
+        // Removal by short name works even for a favourite whose stored routeId
+        // predates a network update.
+        const existing = get().favorites.find(
+          (f) => f.kind === 'route' && f.shortName === routeShortName,
+        );
+        if (existing) {
+          set((s) => ({ favorites: s.favorites.filter((f) => f.id !== existing.id) }));
+          return;
+        }
         const route = getRoute(routeShortName);
         if (!route) return;
         set((s) => {
-          const existing = s.favorites.find((f) => f.kind === 'route' && f.routeId === route.id);
-          if (existing) return { favorites: s.favorites.filter((f) => f.id !== existing.id) };
           return {
             favorites: [
               {

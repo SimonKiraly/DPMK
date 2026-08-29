@@ -231,9 +231,106 @@ Behind `dataSource.useMockTransport` (default **true** = mock) / a Settings togg
 - **place / stop search** (`autocomplete`)
 
 Static base-map network (`data/stops.ts`, `data/routes.ts`), the journey planner,
-and the sync `getStops()/getRouteShapes()` stay on mock data and are the
-automatic fallback. Any live-fetch failure → `TransportStatusBanner`:
+and the sync `getStops()/getRouteShapes()` stay on the static network (see §9)
+and are the automatic fallback. Any live-fetch failure → `TransportStatusBanner`:
 *"Momentálne sa nepodarilo načítať aktuálne dáta."* and silent fallback to mock.
 
 Provider code is isolated in `src/services/ubianService.ts`; the rest of the app
 only talks to `src/services/transportService.ts`.
+
+---
+
+## 9. Static route network — official DPMK route sheet (valid from 1. 7. 2026)
+
+The app's static network (`src/data/dpmkNetwork.ts`, adapted by `data/routes.ts`
++ `data/stops.ts`) is transcribed from the **official DPMK route sheet**:
+
+- **Source:** <https://www.dpmk.sk/cestovanie> →
+  section **"Trasovanie liniek MHD - platné od 1.7.2026"**
+- **Validity:** from **1 July 2026** (a construction-period timetable — line
+  numbers and routings differ from the pre-2026 network; do not "fix" them
+  against older maps)
+- **Extracted:** 2026-08-28, from the page HTML (one `<img>` route-number badge +
+  one stop-sequence paragraph per direction)
+- **Publisher / attribution:** *Dopravný podnik mesta Košice, a.s.*
+
+### Categories processed (the whole page)
+
+| Page section | `transportType` | Routes | Directions |
+|---|---|---|---|
+| A. Električkové linky | `tram` | 14 — `1 2 3 5 6 7 9` + `R1 R3 R4 R5 R6 R7 R8` | 27 |
+| B. Autobusové linky | `bus` | 50 — `10`–`36`, `39 51 52č 54 55 56 57 71 72`, `23a 26P`, `RA1`–`RA8`, `s1 s2 X XR` | 95 |
+| C. Nočné linky | `night` | 7 — `N1`–`N7` | 14 |
+| **Total** | | **71** | **136** |
+
+Unique stops: **261** (259 with coordinates).
+There is **no trolleybus section** on the page.
+
+### Extraction rules (no invented data)
+
+- **Route numbers, headsigns and stop sequences are verbatim** from DPMK. Each
+  direction keeps its own published sequence — the reverse direction is *not*
+  assumed to be the mirror image (e.g. line 23 lists 31 stops one way, 10 the
+  other; both are kept as published). DPMK's exact headsign text (often ALL CAPS,
+  sometimes `DISTRICT, STREET`, and with its own typos like `HAVLÍĆKOVA`) is kept
+  in `DpmkDirection.headsignRaw`; the app displays `destination` = the direction's
+  final stop, proper-cased from the stop list.
+- **Transport type** follows the page's own section heading. `R1`–`R8` are listed
+  by DPMK under *A. Električkové linky* and are therefore typed `tram` (they are
+  U. S. Steel services operated during the tram-construction period; DPMK does
+  not label them as bus on this page).
+- **Two route-number badges** were unreadable on the page:
+  - a broken image on the Letisko/Faurecia corridor → resolved to **`23`** from
+    the adjacent labelled variant `23a` and the corridor;
+  - `52 čierna` (`52%20cierna.jpg`) → **`52č`**.
+- **Parenthetical tokens** (`(Bahýľova)`, `(Železničná nemocnica)`, …) are treated
+  as DPMK's alternate name for the adjacent stop, folded into that stop's
+  `aliases`, not as separate stops.
+- **Spelling variants / OCR-style splits** that clearly denote one physical stop
+  are merged and the variants recorded in `aliases`
+  (`Faurecia` ← `Faurrecia`, `Faurecia (A. Kvasa)`; `Mlynská bašta` ← `Mlynský bašta`).
+- Distinct DPMK names are **not** merged just because they share one Ubian match
+  (the three `Kokšov Bakša …` sub-stops stay separate and share the village
+  coordinate).
+
+### Coordinates
+
+DPMK's route page has **no coordinates**. Each stop name is matched (diacritics-
+and abbreviation-normalised, with an explicit alias table) to a stop in the
+**Ubian departure-board API** (`dpmk-odchody.ubian.sk`, §3) and takes that stop's
+coordinate. Coverage: **259 / 261**.
+
+**2 stops have no coordinate** (`latitude: null`) — freight-only U. S. Steel
+sidings on line 21 that are absent from the public Ubian feed:
+`Centrálne prekladisko rúd`, `Prekladisko hotových výrobkov`. They keep their
+name + sequence, are excluded from map rendering (`MAPPABLE_STOPS` / `hasLocation`,
+`{0,0}` sentinel in the `Stop` adapter), and are safe for the count-based planner.
+No coordinate was invented.
+
+### Stop-name → Ubian-id mapping notes
+
+- ~13 stops carry `aliases` (DPMK abbreviations / parenthetical names / typos).
+- A handful of village sub-stops (Kokšov-Bakša) legitimately share one coordinate.
+- `ubianStopId` on each stop is the matched departure-board id, so live
+  departures (§3) line up with the static stop where the names agree.
+
+### How it maps into the app
+
+| File | Role |
+|---|---|
+| `src/data/dpmkNetwork.ts` | **authoritative** dataset — `DPMK_ROUTES` (routes → directions → sequenced stops), `DPMK_STOPS` (unique stops, coords, aliases, lines), `DPMK_NETWORK_META` |
+| `src/data/routes.ts` | adapter — `ROUTES` (one `TransitRoute` per line) + `ROUTE_PATTERNS` (one per DPMK direction; the planner + mock departure board iterate these) |
+| `src/data/stops.ts` | adapter — `STOPS`, `STOP_BY_ID`, `MAPPABLE_STOPS`, `hasLocation` |
+| `src/data/vehicles.ts` | sim seeds, re-pointed to lines that exist in the new network |
+| `src/data/places.ts` | landmark search seeds, each anchored to a real DPMK stop |
+| `scripts/validateTransportData.ts` | `node scripts/validateTransportData.ts` — structural checks (dup ids, empty names, ≥1 direction, ≥2 stops, 1..n sequences, transport types, terminus = final stop, no broken route↔stop refs, coordinate sanity) |
+
+### Known limitations
+
+- `Stop.zone` is **not** on the route page — every stop is `zone: 1` (Košice city).
+  Real IDS Východ zoning needs the Open Data Košice feed (§2).
+- No per-stop platform data on the route page (`Stop.platform` unused).
+- Headways in `headwayMinutes()` are heuristic (tram 8 / bus 12 / night 30 min),
+  not the real timetable — real departure times come from the live feed (§3) or a
+  future GTFS ingest (§2).
+- The 2 coordinate-less freight sidings above.

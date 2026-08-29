@@ -48,7 +48,10 @@ export function TransitMap({
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
 
   const routeShapes = useMemo(() => getRouteShapes(), []);
-  const stops = useMemo(() => getStops(), []);
+  const stops = useMemo(
+    () => getStops().filter((s) => s.location.latitude !== 0 || s.location.longitude !== 0),
+    [],
+  );
 
   // --- gesture / transform state ---------------------------------------
   const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;

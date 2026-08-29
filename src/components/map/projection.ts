@@ -1,5 +1,5 @@
 import type { LatLng } from '@/types';
-import { STOPS } from '@/data/stops';
+import { MAPPABLE_STOPS } from '@/data/stops';
 
 /**
  * Equirectangular projection tuned to the Košice network extent. Produces
@@ -9,8 +9,8 @@ import { STOPS } from '@/data/stops';
 
 const PAD = 0.012; // ~1.3 km padding around the network
 
-const lats = STOPS.map((s) => s.location.latitude);
-const lngs = STOPS.map((s) => s.location.longitude);
+const lats = MAPPABLE_STOPS.map((s) => s.location.latitude);
+const lngs = MAPPABLE_STOPS.map((s) => s.location.longitude);
 
 export const REGION = {
   minLat: Math.min(...lats) - PAD,

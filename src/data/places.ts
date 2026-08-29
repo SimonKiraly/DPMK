@@ -2,112 +2,114 @@ import type { Place } from '@/types';
 
 /**
  * Named locations the journey planner understands. In production this is a
- * geocoding / places autocomplete service; the planner only needs a coordinate
- * and the nearest stop id to build itineraries.
+ * geocoding / places service; the planner only needs a coordinate and the
+ * nearest stop. Each entry is anchored to a real stop in the official DPMK
+ * network (data/dpmkNetwork.ts) — both `location` and `nearestStopId` come
+ * from that stop.
  */
 export const PLACES: Place[] = [
   {
     id: 'pl-hlavna',
     name: 'Hlavná ulica',
     subtitle: 'Historické centrum · Košice',
-    location: { latitude: 48.7211, longitude: 21.2578 },
-    nearestStopId: 'dom-alzbety',
+    location: { latitude: 48.716396, longitude: 21.254152 },
+    nearestStopId: 's-dom-umenia', // Dom umenia
     kind: 'poi',
   },
   {
     id: 'pl-stanica',
     name: 'Železničná stanica',
     subtitle: 'Staničné námestie 9',
-    location: { latitude: 48.7239, longitude: 21.2683 },
-    nearestStopId: 'stanicne',
+    location: { latitude: 48.72207, longitude: 21.266588 },
+    nearestStopId: 's-stanicne-namestie', // Staničné námestie
     kind: 'stop',
   },
   {
     id: 'pl-oslob',
     name: 'Námestie osloboditeľov',
     subtitle: 'Dolná brána · Košice',
-    location: { latitude: 48.7186, longitude: 21.2591 },
-    nearestStopId: 'namestie-oslob',
+    location: { latitude: 48.717039, longitude: 21.260804 },
+    nearestStopId: 's-nam-osloboditelov', // Nám. Osloboditeľov
     kind: 'poi',
   },
   {
     id: 'pl-optima',
     name: 'OC Optima',
     subtitle: 'Moldavská cesta 32',
-    location: { latitude: 48.6959, longitude: 21.2199 },
-    nearestStopId: 'oc-optima',
+    location: { latitude: 48.696017, longitude: 21.236224 },
+    nearestStopId: 's-oc-optima', // OC Optima
     kind: 'poi',
   },
   {
     id: 'pl-letisko',
     name: 'Letisko Košice',
     subtitle: 'Medzinárodné letisko · 5 km',
-    location: { latitude: 48.6631, longitude: 21.2411 },
-    nearestStopId: 'letisko',
+    location: { latitude: 48.67316, longitude: 21.23691 },
+    nearestStopId: 's-letisko', // Letisko
     kind: 'poi',
   },
   {
     id: 'pl-terasa',
     name: 'Terasa',
     subtitle: 'Sídlisko · Trieda SNP',
-    location: { latitude: 48.7175, longitude: 21.2318 },
-    nearestStopId: 'terasa-torys',
+    location: { latitude: 48.705647, longitude: 21.2418 },
+    nearestStopId: 's-kruhovy-objazd-trieda-snp', // Kruhový objazd, Trieda SNP
     kind: 'address',
   },
   {
     id: 'pl-tahanovce',
     name: 'Sídlisko Ťahanovce',
     subtitle: 'Americká trieda',
-    location: { latitude: 48.7529, longitude: 21.2561 },
-    nearestStopId: 'tahanovce',
+    location: { latitude: 48.76088, longitude: 21.27028 },
+    nearestStopId: 's-hanojska', // Hanojská
     kind: 'address',
   },
   {
     id: 'pl-jazero',
     name: 'Nad jazerom',
-    subtitle: 'Spoločenský pavilón',
-    location: { latitude: 48.6932, longitude: 21.2818 },
-    nearestStopId: 'nad-jazerom',
+    subtitle: 'Sídlisko Nad jazerom',
+    location: { latitude: 48.690293, longitude: 21.279573 },
+    nearestStopId: 's-levocska', // Levočská
     kind: 'address',
   },
   {
     id: 'pl-furca',
     name: 'Furča',
     subtitle: 'Sídlisko Dargovských hrdinov',
-    location: { latitude: 48.7371, longitude: 21.2869 },
-    nearestStopId: 'furca',
+    location: { latitude: 48.730142, longitude: 21.290007 },
+    nearestStopId: 's-dargovskych-hrdinov-miestny-urad', // Dargovských hrdinov, miestny úrad
     kind: 'address',
   },
   {
     id: 'pl-kvp',
     name: 'KVP',
-    subtitle: 'Sídlisko KVP · Cottbuská',
-    location: { latitude: 48.7302, longitude: 21.2168 },
-    nearestStopId: 'kvp-cottbuska',
+    subtitle: 'Sídlisko KVP',
+    location: { latitude: 48.711626, longitude: 21.208826 },
+    nearestStopId: 's-klimkovicova', // Klimkovičova
     kind: 'address',
   },
   {
     id: 'pl-divadlo',
     name: 'Štátne divadlo Košice',
     subtitle: 'Hlavná 58',
-    location: { latitude: 48.7221, longitude: 21.2586 },
-    nearestStopId: 'divadlo',
+    location: { latitude: 48.72484, longitude: 21.260365 },
+    nearestStopId: 's-vodna', // Vodná
     kind: 'poi',
   },
   {
     id: 'pl-unlp',
     name: 'UNLP Rastislavova',
-    subtitle: 'Univerzitná nemocnica',
-    location: { latitude: 48.7133, longitude: 21.2556 },
-    nearestStopId: 'unlp',
+    subtitle: 'Univerzitná nemocnica · Košice',
+    location: { latitude: 48.722012, longitude: 21.234997 },
+    nearestStopId: 's-nova-nemocnica', // Nová nemocnica (najbližšia zastávka)
     kind: 'poi',
   },
   {
     id: 'pl-werferova',
     name: 'Werferova',
-    subtitle: 'Business Centrum Košice',
-    location: { latitude: 48.7156, longitude: 21.2507 },
-    nearestStopId: 'werferova',
+    subtitle: 'Business Centrum · Košice',
+    location: { latitude: 48.716938, longitude: 21.249916 },
+    nearestStopId: 's-krajsky-sud', // Krajský súd (najbližšia zastávka)
     kind: 'work',
   },
 ];
@@ -120,8 +122,6 @@ export function searchPlaces(query: string): Place[] {
   const q = query.trim().toLowerCase();
   if (!q) return PLACES;
   return PLACES.filter(
-    (p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.subtitle.toLowerCase().includes(q),
+    (p) => p.name.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q),
   );
 }

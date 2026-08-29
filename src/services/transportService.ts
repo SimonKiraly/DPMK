@@ -5,9 +5,10 @@ import { useUserStore } from '@/store/useUserStore';
 import { PLACE_BY_ID } from '@/data/places';
 import {
   ROUTES,
-  ROUTE_BY_SHORT_NAME,
+  ROUTE_PATTERNS,
   getRoute,
   headwayMinutes,
+  type RoutePattern,
 } from '@/data/routes';
 import { STOPS, STOP_BY_ID, getStop, stopLabel } from '@/data/stops';
 import { VEHICLE_SEEDS, type VehicleSeed } from '@/data/vehicles';
@@ -83,8 +84,15 @@ function routeStops(route: TransitRoute, direction: 0 | 1): Stop[] {
   return ids.map((id) => STOP_BY_ID[id]).filter(Boolean);
 }
 
+/** True unless the stop is the {0,0} sentinel used for coordinate-less stops. */
+function hasCoord(loc: LatLng): boolean {
+  return loc.latitude !== 0 || loc.longitude !== 0;
+}
+
 function routePolyline(route: TransitRoute, direction: 0 | 1): LatLng[] {
-  return routeStops(route, direction).map((s) => s.location);
+  return routeStops(route, direction)
+    .map((s) => s.location)
+    .filter(hasCoord);
 }
 
 /* ----------------------------------------------------------------- static data */
@@ -103,12 +111,12 @@ export function getRouteByShortName(shortName: string): TransitRoute | undefined
 
 /** Route shapes for the map layer. */
 export function getRouteShapes(): { routeId: string; shortName: string; mode: TransportMode; points: LatLng[] }[] {
-  return ROUTES.filter((r) => r.stopIds.length > 1).map((r) => ({
+  return ROUTES.map((r) => ({
     routeId: r.id,
     shortName: r.shortName,
     mode: r.mode,
     points: routePolyline(r, 0),
-  }));
+  })).filter((s) => s.points.length > 1);
 }
 
 /* ----------------------------------------------------------------- departures */
@@ -120,34 +128,27 @@ export function getStopDepartures(stopId: string, limit = 6, from = new Date()):
   const out: Departure[] = [];
   const baseMs = from.getTime();
 
-  for (const shortName of stop.lines) {
-    const route = getRoute(shortName);
-    if (!route) continue;
-    const headway = headwayMinutes(shortName);
-    const idx = route.stopIds.indexOf(stopId);
-    const reverseIdx = [...route.stopIds].reverse().indexOf(stopId);
+  // One departure stream per DPMK direction (pattern) that calls here before
+  // its terminus — each carries its own published headsign.
+  for (const pattern of ROUTE_PATTERNS) {
+    const idx = pattern.stopIds.indexOf(stopId);
+    if (idx < 0 || idx >= pattern.stopIds.length - 1) continue;
 
-    const directions: { direction: 0 | 1; index: number }[] = [];
-    if (idx >= 0 && idx < route.stopIds.length - 1) directions.push({ direction: 0, index: idx });
-    if (reverseIdx >= 0 && reverseIdx < route.stopIds.length - 1) directions.push({ direction: 1, index: reverseIdx });
-    if (directions.length === 0 && idx >= 0) directions.push({ direction: 0, index: idx });
-
-    for (const { direction } of directions) {
-      const phase = seeded(`${shortName}:${stopId}:${direction}`) * headway;
-      const liveDelay = activeDelayForRoute(shortName);
-      for (let n = 0; n < 2; n += 1) {
-        const minutesFromNow = phase + n * headway + liveDelay;
-        const time = new Date(baseMs + minutesFromNow * 60000);
-        out.push({
-          routeShortName: shortName,
-          mode: route.mode,
-          headsign: route.headsigns[direction],
-          time: time.toISOString(),
-          inMinutes: Math.max(0, Math.round(minutesFromNow)),
-          realtime: liveDelay > 0 || seeded(`rt:${shortName}:${stopId}`) > 0.4,
-          delay: delayStatus(liveDelay),
-        });
-      }
+    const headway = headwayMinutes(pattern.shortName);
+    const phase = seeded(`${pattern.id}:${stopId}`) * headway;
+    const liveDelay = activeDelayForRoute(pattern.shortName);
+    for (let n = 0; n < 2; n += 1) {
+      const minutesFromNow = phase + n * headway + liveDelay;
+      const time = new Date(baseMs + minutesFromNow * 60000);
+      out.push({
+        routeShortName: pattern.shortName,
+        mode: pattern.mode,
+        headsign: pattern.headsign,
+        time: time.toISOString(),
+        inMinutes: Math.max(0, Math.round(minutesFromNow)),
+        realtime: liveDelay > 0 || seeded(`rt:${pattern.id}:${stopId}`) > 0.4,
+        delay: delayStatus(liveDelay),
+      });
     }
   }
 
@@ -231,9 +232,9 @@ function walkMinutes(a: LatLng, b: LatLng): number {
   return Math.max(1, Math.round(haversineMeters(a, b) / simulation.walkingMetersPerMinute));
 }
 
-function nextDeparture(routeShortName: string, stopId: string, direction: 0 | 1, after: number): number {
-  const headway = headwayMinutes(routeShortName);
-  const phase = seeded(`${routeShortName}:${stopId}:${direction}`) * headway;
+function nextDeparture(pattern: RoutePattern, stopId: string, after: number): number {
+  const headway = headwayMinutes(pattern.shortName);
+  const phase = seeded(`${pattern.id}:${stopId}`) * headway;
   let t = phase;
   const afterMinutes = after / 60000;
   while (t < afterMinutes) t += headway;
@@ -241,34 +242,25 @@ function nextDeparture(routeShortName: string, stopId: string, direction: 0 | 1,
 }
 
 interface RidePlan {
-  route: TransitRoute;
-  direction: 0 | 1;
+  pattern: RoutePattern;
   fromIdx: number;
   toIdx: number;
 }
 
-/** Every (route, direction) that serves `fromId` then `toId`. */
+/** Every DPMK direction (pattern) that serves `fromId` then later `toId`. */
 function ridesBetween(fromId: string, toId: string): RidePlan[] {
   const plans: RidePlan[] = [];
-  for (const route of ROUTES) {
-    for (const direction of [0, 1] as const) {
-      const ids = direction === 0 ? route.stopIds : [...route.stopIds].reverse();
-      const fromIdx = ids.indexOf(fromId);
-      const toIdx = ids.indexOf(toId);
-      if (fromIdx >= 0 && toIdx > fromIdx) {
-        plans.push({ route, direction, fromIdx, toIdx });
-      }
-    }
+  for (const pattern of ROUTE_PATTERNS) {
+    const fromIdx = pattern.stopIds.indexOf(fromId);
+    if (fromIdx < 0) continue;
+    const toIdx = pattern.stopIds.indexOf(toId, fromIdx + 1);
+    if (toIdx > fromIdx) plans.push({ pattern, fromIdx, toIdx });
   }
   return plans;
 }
 
-function orderedStopIds(route: TransitRoute, direction: 0 | 1): string[] {
-  return direction === 0 ? route.stopIds : [...route.stopIds].reverse();
-}
-
 function buildRideLeg(plan: RidePlan, boardAtMs: number): JourneyLeg {
-  const ids = orderedStopIds(plan.route, plan.direction);
+  const ids = plan.pattern.stopIds;
   const fromStop = STOP_BY_ID[ids[plan.fromIdx]];
   const toStop = STOP_BY_ID[ids[plan.toIdx]];
   const segments = plan.toIdx - plan.fromIdx;
@@ -276,15 +268,15 @@ function buildRideLeg(plan: RidePlan, boardAtMs: number): JourneyLeg {
   const arrival = boardAtMs + rideMinutes * 60000;
   return {
     kind: 'ride',
-    mode: plan.route.mode,
-    routeShortName: plan.route.shortName,
+    mode: plan.pattern.mode,
+    routeShortName: plan.pattern.shortName,
     fromName: stopLabel(fromStop),
     toName: stopLabel(toStop),
     departure: new Date(boardAtMs).toISOString(),
     arrival: new Date(arrival).toISOString(),
     durationMinutes: rideMinutes,
     stopCount: segments,
-    headsign: plan.route.headsigns[plan.direction],
+    headsign: plan.pattern.headsign,
   };
 }
 
@@ -387,7 +379,7 @@ export async function planJourneys(
   // --- direct rides -------------------------------------------------------
   for (const plan of ridesBetween(from.stopId, to.stopId)) {
     const walkArrivalAtStop = startMs + accessWalkFrom * 60000;
-    const boardMs = nextDeparture(plan.route.shortName, from.stopId, plan.direction, walkArrivalAtStop);
+    const boardMs = nextDeparture(plan.pattern, from.stopId, walkArrivalAtStop);
     const ride = buildRideLeg(plan, boardMs);
     const legs = makeAccessLegs(boardMs, new Date(ride.arrival).getTime(), [ride]);
     journeys.push(assembleJourney(from, to, legs, 0));
@@ -399,27 +391,22 @@ export async function planJourneys(
   );
   const seen = new Set(journeys.map((j) => j.id));
 
-  for (const legA of ROUTES.flatMap((route) =>
-    ([0, 1] as const).map((direction) => ({ route, direction, ids: orderedStopIds(route, direction) })),
-  )) {
-    const fromIdx = legA.ids.indexOf(from.stopId);
-    if (fromIdx < 0 || fromIdx === legA.ids.length - 1) continue;
+  for (const legA of ROUTE_PATTERNS) {
+    const fromIdx = legA.stopIds.indexOf(from.stopId);
+    if (fromIdx < 0 || fromIdx === legA.stopIds.length - 1) continue;
 
-    for (let hubIdx = fromIdx + 1; hubIdx < legA.ids.length; hubIdx += 1) {
-      const hubId = legA.ids[hubIdx];
+    for (let hubIdx = fromIdx + 1; hubIdx < legA.stopIds.length; hubIdx += 1) {
+      const hubId = legA.stopIds[hubIdx];
       if (hubId === to.stopId || !transferHubs.has(hubId)) continue;
 
       for (const legB of ridesBetween(hubId, to.stopId)) {
-        if (legB.route.shortName === legA.route.shortName) continue;
+        if (legB.pattern.shortName === legA.shortName) continue;
 
         const walkArrivalAtStop = startMs + accessWalkFrom * 60000;
-        const boardA = nextDeparture(legA.route.shortName, from.stopId, legA.direction, walkArrivalAtStop);
-        const rideA = buildRideLeg(
-          { route: legA.route, direction: legA.direction, fromIdx, toIdx: hubIdx },
-          boardA,
-        );
+        const boardA = nextDeparture(legA, from.stopId, walkArrivalAtStop);
+        const rideA = buildRideLeg({ pattern: legA, fromIdx, toIdx: hubIdx }, boardA);
         const transferReadyMs = new Date(rideA.arrival).getTime() + 2 * 60000; // 2 min transfer
-        const boardB = nextDeparture(legB.route.shortName, hubId, legB.direction, transferReadyMs);
+        const boardB = nextDeparture(legB.pattern, hubId, transferReadyMs);
         const rideB = buildRideLeg(legB, boardB);
 
         const transferWalk: JourneyLeg = {
