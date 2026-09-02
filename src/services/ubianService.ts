@@ -31,14 +31,27 @@ interface UbianEnvelope {
 
 interface UbianLine {
   lineID: number;
+  /** Ubian line category. Košice MHD = 1; regional/suburban bus = 2; rail = 22/25/26/31. */
+  lineType: number;
   line: string;
   lineNumber: number;
   lineName: string;
   ezLineType: string; // "tram" | "bus" | "train" | "trolleybus" | …
-  ezVehicleType: string; // "TRAM" | "BUS" | …
+  ezVehicleType: string | null; // "TRAM" | "BUS" | …
+  /** Operator/company id. "Dopravný podnik mesta Košice a.s." = 1000. */
   firmaID: number;
+  /** "<line>/<firmaID>", e.g. "6/1000" (MHD) vs "802446/1001" (eurobus). */
+  uniqueID?: string;
+  /**
+   * Ubian's own "mestská doprava" flag — `true` for Košice MHD, `false` for
+   * every regional / suburban / intercity carrier (eurobus, ARRIVA) and for
+   * rail (ŽSSK). This is the field used to keep the tracker MHD-only.
+   */
   ezIsUrban?: boolean;
   ezIsTrain?: boolean;
+  ezIsBus?: boolean;
+  /** Operator display name, e.g. "Dopravný podnik mesta Košice a.s." / "eurobus". */
+  supervisorName?: string;
 }
 
 interface UbianTrip {
@@ -178,12 +191,29 @@ function classifyUbianLine(line: UbianLine): UbianLineClass {
 }
 
 /**
- * Map an Ubian line onto a supported DPMK MHD mode, or `null` when it is not
- * part of the MHD network (regional rail) and must not appear anywhere in the
- * app — map, counts, list, search or journey results. This is the single filter
- * point: Ubian feed → normalize → keep BUS / TRAM (+ night) → app.
+ * Košice city public transport (MHD) vs everything else.
+ *
+ * `/navigation/vehicles/nearby` returns *every* vehicle around Košice, not just
+ * DPMK's: eurobus (prímestská / suburban), ARRIVA (intercity) and ŽSSK (rail)
+ * all appear. Each line carries `ezIsUrban` — Ubian's own "mestská doprava"
+ * flag: `true` for DPMK MHD, `false` for every regional carrier. On every
+ * observed vehicle it agrees with `firmaID` 1000 and trip `operatorID` 18024
+ * ("Dopravný podnik mesta Košice a.s."), so `ezIsUrban === true` is the check —
+ * no operator whitelist, no vehicle-id list, no colour heuristics. Strict
+ * `=== true` means a line with the flag absent is treated as non-MHD.
+ */
+function isKosiceMhdLine(line: UbianLine): boolean {
+  return line.ezIsUrban === true;
+}
+
+/**
+ * Map an Ubian line onto a supported DPMK MHD mode, or `null` when the vehicle
+ * is not Košice MHD and must not appear anywhere in the app — live map, vehicle
+ * list, counts, search, vehicle detail or departures. This is the single filter
+ * point: Ubian feed → keep MHD only → normalize to BUS / TRAM (+ night) → app.
  */
 export function toMhdMode(line: UbianLine): TransportMode | null {
+  if (!isKosiceMhdLine(line)) return null; // regional / suburban / intercity / rail
   switch (classifyUbianLine(line)) {
     case 'tram':
       return 'tram';
@@ -255,7 +285,7 @@ function mapStop(s: UbianStop): Stop {
 function mapDeparture(d: UbianDepartureRaw): Departure | null {
   const line = d.timeTableTrip.timeTableLine;
   const mode = toMhdMode(line);
-  if (mode === null) return null; // regional rail — not shown in MHD departures
+  if (mode === null) return null; // non-MHD (regional / suburban / rail) — not shown
   const timeMs = d.plannedDepartureTimestamp * 1000 + d.delayMinutes * 60000;
   return {
     routeShortName: line.line,
@@ -274,7 +304,7 @@ const lastPos = new Map<number, LatLng>();
 function mapVehicle(v: UbianVehicleRaw): Vehicle | null {
   const line = v.timeTableTrip.timeTableLine;
   const mode = toMhdMode(line);
-  if (mode === null) return null; // regional rail — never reaches the map / list / count
+  if (mode === null) return null; // non-MHD — never reaches the map / list / count / detail
   const location = { latitude: v.latitude, longitude: v.longitude };
   const prev = lastPos.get(v.vehicleID);
   const bearing =
@@ -401,7 +431,8 @@ export const ubianService = {
     return (json.vehicles ?? [])
       .filter((v) => !v.timeTableTrip?.canceled && v.latitude && v.longitude)
       .map(mapVehicle)
-      // Drop regional rail: it must not show on the map or count toward the fleet.
+      // mapVehicle returns null for anything that is not Košice MHD (eurobus /
+      // ARRIVA / ŽSSK) — those never reach the map, list, count or detail.
       .filter((v): v is Vehicle => v !== null)
       .filter((v) => (seen.has(v.id) ? false : (seen.add(v.id), true)));
   },

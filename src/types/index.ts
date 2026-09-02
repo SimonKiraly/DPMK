@@ -4,9 +4,11 @@ export type LatLng = { latitude: number; longitude: number };
 
 /**
  * The transport the DPMK MHD network runs — buses and trams, plus the night
- * service band. Košice MHD has no trolleybuses and no rail; regional trains are
- * not part of this app and are filtered out at the Ubian API boundary
- * (`ubianService.toMhdMode`) before any data reaches the UI.
+ * service band. Košice MHD has no trolleybuses and no rail. Anything that is not
+ * Košice city public transport — suburban / regional / intercity buses (eurobus,
+ * ARRIVA) and rail (ŽSSK) — is filtered out at the Ubian API boundary
+ * (`ubianService.toMhdMode`, on the `ezIsUrban` flag) before any data reaches
+ * the UI.
  */
 export type TransportMode = 'bus' | 'tram' | 'night';
 
