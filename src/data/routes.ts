@@ -16,8 +16,6 @@ const COLOR_BY_TYPE: Record<TransportMode, string | undefined> = {
   tram: colors.accentDeep,
   bus: colors.primary,
   night: colors.textSecondary,
-  trolleybus: colors.primary,
-  rail: colors.primaryTint,
 };
 
 export interface RoutePattern {
@@ -79,7 +77,6 @@ export function getRoute(shortName: string): TransitRoute | undefined {
 export function headwayMinutes(shortName: string): number {
   const route = getRoute(shortName);
   if (!route) return 15;
-  if (route.mode === 'rail') return 60;
   if (route.mode === 'night') return 30;
   if (route.mode === 'tram') return 8;
   return 12;

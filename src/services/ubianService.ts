@@ -164,14 +164,39 @@ async function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Pr
 
 /* ---------------------------------------------------------------- mappers */
 
-function toMode(line: UbianLine): TransportMode {
+/** Raw transport classes the Ubian feed distinguishes for a line. */
+type UbianLineClass = 'tram' | 'trolleybus' | 'train' | 'night' | 'bus';
+
+function classifyUbianLine(line: UbianLine): UbianLineClass {
   const t = (line.ezLineType || '').toLowerCase();
   const vt = (line.ezVehicleType || '').toLowerCase();
   if (t.includes('tram') || vt.includes('tram')) return 'tram';
   if (t.includes('trol') || vt.includes('trol')) return 'trolleybus';
-  if (t.includes('train') || t.includes('rail') || line.ezIsTrain) return 'rail';
+  if (t.includes('train') || t.includes('rail') || line.ezIsTrain) return 'train';
   if (/^n/i.test(line.line)) return 'night';
   return 'bus';
+}
+
+/**
+ * Map an Ubian line onto a supported DPMK MHD mode, or `null` when it is not
+ * part of the MHD network (regional rail) and must not appear anywhere in the
+ * app — map, counts, list, search or journey results. This is the single filter
+ * point: Ubian feed → normalize → keep BUS / TRAM (+ night) → app.
+ */
+export function toMhdMode(line: UbianLine): TransportMode | null {
+  switch (classifyUbianLine(line)) {
+    case 'tram':
+      return 'tram';
+    case 'night':
+      return 'night';
+    case 'bus':
+    case 'trolleybus':
+      // Košice runs no trolleybuses; if the feed ever tags one it is a
+      // road vehicle and belongs with the buses.
+      return 'bus';
+    case 'train':
+      return null;
+  }
 }
 
 function delayStatus(minutes: number): DelayStatus {
@@ -211,10 +236,8 @@ function stopLocation(s: UbianStop): LatLng {
 }
 
 function stopMode(s: UbianStop): TransportMode {
-  if (s.forRail) return 'rail';
   const lineTypes = Object.values(s.passingLines ?? {}).flat().map((x) => x.lineType);
   if (lineTypes.some((t) => t.includes('tram'))) return 'tram';
-  if (lineTypes.some((t) => t.includes('trol'))) return 'trolleybus';
   return 'bus';
 }
 
@@ -229,12 +252,14 @@ function mapStop(s: UbianStop): Stop {
   };
 }
 
-function mapDeparture(d: UbianDepartureRaw): Departure {
+function mapDeparture(d: UbianDepartureRaw): Departure | null {
   const line = d.timeTableTrip.timeTableLine;
+  const mode = toMhdMode(line);
+  if (mode === null) return null; // regional rail — not shown in MHD departures
   const timeMs = d.plannedDepartureTimestamp * 1000 + d.delayMinutes * 60000;
   return {
     routeShortName: line.line,
-    mode: toMode(line),
+    mode,
     headsign: d.timeTableTrip.destinationStopName,
     time: new Date(timeMs).toISOString(),
     inMinutes: Math.max(0, Math.round((timeMs - Date.now()) / 60000)),
@@ -246,8 +271,10 @@ function mapDeparture(d: UbianDepartureRaw): Departure {
 /** Last known position per vehicle, to derive a heading. */
 const lastPos = new Map<number, LatLng>();
 
-function mapVehicle(v: UbianVehicleRaw): Vehicle {
+function mapVehicle(v: UbianVehicleRaw): Vehicle | null {
   const line = v.timeTableTrip.timeTableLine;
+  const mode = toMhdMode(line);
+  if (mode === null) return null; // regional rail — never reaches the map / list / count
   const location = { latitude: v.latitude, longitude: v.longitude };
   const prev = lastPos.get(v.vehicleID);
   const bearing =
@@ -260,7 +287,7 @@ function mapVehicle(v: UbianVehicleRaw): Vehicle {
     id: `u_${v.vehicleID}`,
     routeShortName: line.line,
     routeId: `ubian_${line.lineID}`,
-    mode: toMode(line),
+    mode,
     headsign: v.timeTableTrip.destinationStopName,
     direction: v.timeTableTrip.ezTripDirection === 'back' ? 1 : 0,
     location,
@@ -299,8 +326,9 @@ export const ubianService = {
     );
 
     const stops = (json.stops ?? [])
-      // MHD focus: urban transport + rail; skip pure regional-bus stops.
-      .filter((s) => s.forUrbanPublicTransport || s.forRail)
+      // DPMK MHD only: keep every DPMK-served stop (a stop at the railway
+      // station stays if MHD calls there), drop rail-only and regional-bus stops.
+      .filter((s) => s.forUrbanPublicTransport)
       .map((s) => {
         const stop = mapStop(s);
         const distanceMeters = haversineMeters(origin, stop.location);
@@ -345,6 +373,7 @@ export const ubianService = {
     );
     return (json.departures ?? [])
       .map(mapDeparture)
+      .filter((d): d is Departure => d !== null)
       .sort((a, b) => a.inMinutes - b.inMinutes)
       .slice(0, limit);
   },
@@ -372,6 +401,8 @@ export const ubianService = {
     return (json.vehicles ?? [])
       .filter((v) => !v.timeTableTrip?.canceled && v.latitude && v.longitude)
       .map(mapVehicle)
+      // Drop regional rail: it must not show on the map or count toward the fleet.
+      .filter((v): v is Vehicle => v !== null)
       .filter((v) => (seen.has(v.id) ? false : (seen.add(v.id), true)));
   },
 
@@ -432,7 +463,12 @@ export const ubianService = {
       get<UbianEnvelope & { results: UbianAutocompleteResult[] }>('/navigation/autocomplete', { query: q }),
     );
     return (json.results ?? [])
-      .filter((r) => r.type === 'stop' && (r.stopCity === 'Košice' || r.region === 'Košice'))
+      .filter(
+        (r) =>
+          r.type === 'stop' &&
+          r.transportType !== 'train' && // no pure railway stations in results
+          (r.stopCity === 'Košice' || r.region === 'Košice'),
+      )
       .slice(0, 8)
       .map((r) => ({
         id: `u${r.id}`,

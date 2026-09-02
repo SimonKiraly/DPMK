@@ -20,7 +20,7 @@ const FILTERS: { value: TransportMode | 'all'; label: string }[] = [
   { value: 'all', label: 'Všetko' },
   { value: 'bus', label: 'Autobus' },
   { value: 'tram', label: 'Električka' },
-  { value: 'rail', label: 'Vlak' },
+  { value: 'night', label: 'Nočné' },
 ];
 
 export function NearbyStopsScreen() {

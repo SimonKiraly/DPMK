@@ -23,7 +23,6 @@ import { formatDate } from '@/utils/format';
 const MODES: { value: TransportMode; label: string }[] = [
   { value: 'bus', label: 'Autobus' },
   { value: 'tram', label: 'Električka' },
-  { value: 'trolleybus', label: 'Trolejbus' },
   { value: 'night', label: 'Nočná linka' },
 ];
 

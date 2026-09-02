@@ -11,7 +11,9 @@ import MapView, { Polyline, type Region } from 'react-native-maps';
 
 import { colors } from '@/constants/theme';
 import { mapConfig } from '@/constants/config';
+import { MAP_DEBUG } from '@/constants/mapDebug';
 import { getRouteShapes, getStops } from '@/services/transportService';
+import { hasValidCoordinates, isValidLatLng, sanitizePath } from '@/utils/coords';
 import type { LatLng, TransportMode, Vehicle } from '@/types';
 import { MapErrorBoundary, MapUnavailable } from '@/components/map/MapFallback';
 import { StopMarker } from '@/components/map/StopMarker';
@@ -48,7 +50,6 @@ export interface TransitMapProps {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-const hasCoord = (l: LatLng) => l.latitude !== 0 || l.longitude !== 0;
 const HIDDEN_STROKE = 'rgba(0,0,0,0)';
 
 function inRegion(p: LatLng, r: Region): boolean {
@@ -61,8 +62,7 @@ function inRegion(p: LatLng, r: Region): boolean {
 function strokeForMode(mode: TransportMode): string {
   if (mode === 'tram') return 'rgba(255,199,33,0.85)'; // accentDeep
   if (mode === 'night') return 'rgba(107,122,144,0.7)'; // textSecondary
-  if (mode === 'rail') return 'rgba(43,98,158,0.4)';
-  return 'rgba(43,98,158,0.55)'; // primary — bus / trolleybus
+  return 'rgba(43,98,158,0.55)'; // primary — bus
 }
 
 /**
@@ -101,16 +101,23 @@ function TransitMapInner(
   // children. react-native-maps (1.20 / New Architecture, as shipped in Expo Go
   // SDK 54) crashes when many overlays are added or removed in one commit —
   // which is exactly what happened when a filter dropped ~50 bus polylines.
+  // Invalid transport data must never reach a native overlay: every point is
+  // range-checked (finite, lat -90..90, lng -180..180) and null-island points
+  // are dropped before a Polyline / Marker is built from it.
   const routeShapes = useMemo(
-    () => getRouteShapes().filter((s) => s.points.length >= 2),
+    () =>
+      getRouteShapes()
+        .map((s) => ({ ...s, points: sanitizePath(s.points) }))
+        .filter((s) => s.points.length >= 2),
     [],
   );
-  const allStops = useMemo(() => getStops().filter((s) => hasCoord(s.location)), []);
+  const allStops = useMemo(() => getStops().filter(hasValidCoordinates), []);
 
   // Stops within the current viewport, nearest-to-centre first, capped — bounded
   // and only churns a few markers at a time while panning.
   const visibleStops = useMemo(() => {
-    if (!showStops || region.latitudeDelta > mapConfig.stopVisibilityLatitudeDelta) return [];
+    if (!showStops || !MAP_DEBUG.stops) return [];
+    if (region.latitudeDelta > mapConfig.stopVisibilityLatitudeDelta) return [];
     return allStops
       .filter((s) => inRegion(s.location, region))
       .map((s) => ({
@@ -127,7 +134,7 @@ function TransitMapInner(
   // One marker per vehicle currently in the feed. The filter only hides markers
   // (opacity 0) — it never removes them — so a filter tap can't churn the set.
   const drawnVehicles = useMemo(
-    () => vehicles.filter((v) => hasCoord(v.location)),
+    () => (MAP_DEBUG.vehicles ? vehicles.filter(hasValidCoordinates) : []),
     [vehicles],
   );
   const matchesFilter = useCallback(
@@ -137,6 +144,7 @@ function TransitMapInner(
 
   // --- imperative focus API -------------------------------------------
   const animateTo = useCallback((coordinate: LatLng, latitudeDelta: number) => {
+    if (!isValidLatLng(coordinate)) return;
     mapRef.current?.animateToRegion(
       {
         latitude: coordinate.latitude,
@@ -229,9 +237,9 @@ function TransitMapInner(
           style={StyleSheet.absoluteFill}
           initialRegion={mapConfig.initialRegion}
           onRegionChangeComplete={onRegionChangeComplete}
-          showsUserLocation={!!userLocation}
+          showsUserLocation={MAP_DEBUG.userDot && isValidLatLng(userLocation)}
           showsMyLocationButton={false}
-          showsPointsOfInterest
+          showsPointsOfInterests
           showsBuildings
           showsCompass={false}
           showsScale={false}
@@ -245,20 +253,21 @@ function TransitMapInner(
           loadingIndicatorColor={colors.primary}
           mapPadding={{ top: 132, right: 8, bottom: Math.max(8, bottomInset), left: 8 }}
         >
-          {routeShapes.map((s) => {
-            const on = matchesFilter(s.mode);
-            return (
-              <Polyline
-                key={s.routeId}
-                coordinates={s.points}
-                strokeColor={on ? strokeForMode(s.mode) : HIDDEN_STROKE}
-                strokeWidth={on ? (s.mode === 'tram' ? 3 : 2.5) : 0.5}
-                lineCap="round"
-                lineJoin="round"
-                tappable={false}
-              />
-            );
-          })}
+          {MAP_DEBUG.routes &&
+            routeShapes.map((s) => {
+              const on = matchesFilter(s.mode);
+              return (
+                <Polyline
+                  key={s.routeId}
+                  coordinates={s.points}
+                  strokeColor={on ? strokeForMode(s.mode) : HIDDEN_STROKE}
+                  strokeWidth={on ? (s.mode === 'tram' ? 3 : 2.5) : 0.5}
+                  lineCap="round"
+                  lineJoin="round"
+                  tappable={false}
+                />
+              );
+            })}
 
           {visibleStops.map((s) => (
             <StopMarker key={s.id} stop={s} onOpen={handleStop} onFocus={focusStop} />

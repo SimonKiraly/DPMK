@@ -120,7 +120,7 @@ function LegRow({ leg, last }: { leg: JourneyLeg; last: boolean }) {
         <Text variant="body" weight="extrabold" style={{ marginTop: 4 }}>
           {isWalk
             ? `Chôdza ${leg.durationMinutes} min`
-            : `${leg.mode === 'tram' ? 'Električka' : leg.mode === 'rail' ? 'Vlak' : 'Autobus'} ${leg.routeShortName} → ${leg.headsign ?? leg.toName}`}
+            : `${leg.mode === 'tram' ? 'Električka' : 'Autobus'} ${leg.routeShortName} → ${leg.headsign ?? leg.toName}`}
         </Text>
         {!isWalk && leg.stopCount ? (
           <Text variant="caption" color={colors.textTertiary} style={{ marginTop: 2 }}>

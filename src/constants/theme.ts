@@ -44,9 +44,7 @@ export const colors = {
 /** Transport-mode accent colours (line badges, markers, filters). */
 export const modeColors = {
   bus: { bg: colors.primary, fg: colors.white },
-  trolleybus: { bg: colors.primary, fg: colors.white },
   tram: { bg: colors.accent, fg: colors.text },
-  rail: { bg: colors.primaryTint, fg: colors.primary },
   night: { bg: '#F1F4F9', fg: colors.textSecondary },
 } as const;
 

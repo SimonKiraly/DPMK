@@ -11,9 +11,7 @@ import { formatDistance } from '@/utils/format';
 
 const MODE_TAG: Record<string, string> = {
   bus: 'BUS',
-  trolleybus: 'TROL',
   tram: 'ELE',
-  rail: 'VLAK',
   night: 'NOC',
 };
 

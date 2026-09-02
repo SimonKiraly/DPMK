@@ -311,7 +311,7 @@ function assembleJourney(
     fareEuros: CITY_FARE,
     delay: delayStatus(delayMin),
     fastest: false,
-    accessible: rideLegs.every((l) => l.mode !== 'rail' && l.mode !== 'night'),
+    accessible: rideLegs.every((l) => l.mode !== 'night'),
   };
 }
 

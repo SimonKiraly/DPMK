@@ -2,6 +2,7 @@
   "expo": {
     "name": "MHD Košice",
     "slug": "mhd-kosice",
+    "owner": "kiralydev",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +24,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -32,6 +36,7 @@
     },
     "plugins": [
       "expo-secure-store",
+      "expo-status-bar",
       "expo-font",
       [
         "expo-splash-screen",
@@ -55,7 +60,9 @@
       ]
     ],
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "be49e354-238b-4061-ae82-3e3b3731ba0b"
+      }
     }
   }
 }

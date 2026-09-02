@@ -93,7 +93,7 @@ export function ModalSheet({
           GestureHandlerRootView for the drag-to-dismiss gesture to work. */}
       <GestureHandlerRootView style={{ flex: 1, justifyContent: 'flex-end' }}>
         <Animated.View
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.overlay }, backdropStyle]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }, backdropStyle]}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Zavrieť" />
         </Animated.View>

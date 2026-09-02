@@ -13,6 +13,7 @@ import { MapControls } from '@/components/map/MapControls';
 import { MapErrorBoundary } from '@/components/map/MapFallback';
 import { TransitMap, type TransitMapHandle } from '@/components/map/TransitMap';
 import { colors } from '@/constants/theme';
+import { MAP_DEBUG } from '@/constants/mapDebug';
 import { useLiveVehicles } from '@/hooks/useLiveVehicles';
 import { useNearbyStops } from '@/hooks/useNearbyStops';
 import { stopLabel } from '@/data/stops';
@@ -98,6 +99,7 @@ export function LiveMapScreen() {
         <TransportStatusBanner style={{ marginTop: 8 }} />
       </View>
 
+      {MAP_DEBUG.sheet ? (
       <BottomSheet
         snapPoints={SHEET_SNAPS}
         initialIndex={1}
@@ -159,6 +161,7 @@ export function LiveMapScreen() {
           ))}
         </View>
       </BottomSheet>
+      ) : null}
     </View>
   );
 }
