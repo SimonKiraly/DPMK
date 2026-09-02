@@ -9,14 +9,6 @@ import type { Place } from '@/types';
  */
 export const PLACES: Place[] = [
   {
-    id: 'pl-hlavna',
-    name: 'Hlavná ulica',
-    subtitle: 'Historické centrum · Košice',
-    location: { latitude: 48.716396, longitude: 21.254152 },
-    nearestStopId: 's-dom-umenia', // Dom umenia
-    kind: 'poi',
-  },
-  {
     id: 'pl-stanica',
     name: 'Železničná stanica',
     subtitle: 'Staničné námestie 9',
@@ -29,7 +21,7 @@ export const PLACES: Place[] = [
     name: 'Námestie osloboditeľov',
     subtitle: 'Dolná brána · Košice',
     location: { latitude: 48.717039, longitude: 21.260804 },
-    nearestStopId: 's-nam-osloboditelov', // Nám. Osloboditeľov
+    nearestStopId: 's-namestie-osloboditelov', // Námestie osloboditeľov
     kind: 'poi',
   },
   {

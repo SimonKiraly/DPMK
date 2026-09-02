@@ -263,7 +263,7 @@ The app's static network (`src/data/dpmkNetwork.ts`, adapted by `data/routes.ts`
 | C. Nočné linky | `night` | 7 — `N1`–`N7` | 14 |
 | **Total** | | **71** | **136** |
 
-Unique stops: **261** (259 with coordinates).
+Unique stops: **258** (256 with coordinates).
 There is **no trolleybus section** on the page.
 
 ### Extraction rules (no invented data)
@@ -288,7 +288,10 @@ There is **no trolleybus section** on the page.
   `aliases`, not as separate stops.
 - **Spelling variants / OCR-style splits** that clearly denote one physical stop
   are merged and the variants recorded in `aliases`
-  (`Faurecia` ← `Faurrecia`, `Faurecia (A. Kvasa)`; `Mlynská bašta` ← `Mlynský bašta`).
+  (`Faurecia` ← `Faurrecia`, `Faurecia (A. Kvasa)`; `Mlynská bašta` ← `Mlynský bašta`;
+  `Námestie osloboditeľov` ← `Nám. Osloboditeľov` (line 11 headsign form, same
+  Ubian stop `u1000000064`); `Vyšné Opátske` ← `Vyšné Opátske, spaľovňa` (line 31
+  terminus label, same Ubian stop `u1000000222`)).
 - Distinct DPMK names are **not** merged just because they share one Ubian match
   (the three `Kokšov Bakša …` sub-stops stay separate and share the village
   coordinate).
@@ -298,7 +301,7 @@ There is **no trolleybus section** on the page.
 DPMK's route page has **no coordinates**. Each stop name is matched (diacritics-
 and abbreviation-normalised, with an explicit alias table) to a stop in the
 **Ubian departure-board API** (`dpmk-odchody.ubian.sk`, §3) and takes that stop's
-coordinate. Coverage: **259 / 261**.
+coordinate. Coverage: **256 / 258**.
 
 **2 stops have no coordinate** (`latitude: null`) — freight-only U. S. Steel
 sidings on line 21 that are absent from the public Ubian feed:

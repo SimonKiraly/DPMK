@@ -54,7 +54,7 @@ export function PlannerScreen() {
   };
 
   const search = () => {
-    const fromId = from === CURRENT_LOCATION ? 'pl-hlavna' : from;
+    const fromId = from === CURRENT_LOCATION ? 'pl-oslob' : from;
     if (!to) return;
     navigation.navigate('Results', { fromPlaceId: fromId, toPlaceId: to });
   };
@@ -168,12 +168,12 @@ export function PlannerScreen() {
                 <SavedPlaceButton
                   label="Domov"
                   sub={home?.placeName ?? 'Nastaviť v Obľúbených'}
-                  onPress={() => (home ? navigation.navigate('Results', { fromPlaceId: 'pl-hlavna', toPlaceId: nearestPlaceId(home.nearestStopId) }) : navigation.navigate('Favorites'))}
+                  onPress={() => (home ? navigation.navigate('Results', { fromPlaceId: 'pl-oslob', toPlaceId: nearestPlaceId(home.nearestStopId) }) : navigation.navigate('Favorites'))}
                 />
                 <SavedPlaceButton
                   label="Práca"
                   sub={work?.placeName ?? 'Nastaviť v Obľúbených'}
-                  onPress={() => (work ? navigation.navigate('Results', { fromPlaceId: 'pl-hlavna', toPlaceId: nearestPlaceId(work.nearestStopId) }) : navigation.navigate('Favorites'))}
+                  onPress={() => (work ? navigation.navigate('Results', { fromPlaceId: 'pl-oslob', toPlaceId: nearestPlaceId(work.nearestStopId) }) : navigation.navigate('Favorites'))}
                 />
               </View>
             </View>
@@ -223,7 +223,7 @@ export function PlannerScreen() {
 }
 
 function nearestPlaceId(stopId: string): string {
-  return PLACES.find((p) => p.nearestStopId === stopId)?.id ?? 'pl-hlavna';
+  return PLACES.find((p) => p.nearestStopId === stopId)?.id ?? 'pl-oslob';
 }
 
 function SavedPlaceButton({ label, sub, onPress }: { label: string; sub: string; onPress: () => void }) {
