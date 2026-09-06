@@ -1,0 +1,231 @@
+{
+  "_comment": "Hand-built from real Ubian /navigation/vehicles/nearby field shapes (see docs/TRANSPORT-DATA-SOURCE.md §3). Known composition for exact assertions: 5 MHD (2 tram, 2 bus, 1 night) survive; rejected = 2 eurobus (prímestská) + 1 ARRIVA (intercity) + 2 ŽSSK (rail) + 1 flag-absent + 1 DPMP Prešov (ezIsUrban:true but firmaID 1030 = another city); 1 duplicate vehicleID collapses; 1 canceled + 1 zero-position drop before classification.",
+  "status": "ok",
+  "vehicles": [
+    {
+      "vehicleID": 1276747, "delayMinutes": 0, "latitude": 48.71732, "longitude": 21.26108,
+      "lastStopOrder": 22, "isOnStop": true, "tooltip": "Košice, Havlíčkova → Košice, Staničné námestie",
+      "timeTableTrip": {
+        "tripID": 1003243321, "ezTripDirection": "there",
+        "destinationStopName": "Staničné námestie", "destinationCityName": "Košice",
+        "lowFloor": false, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013620, "lineType": 1, "line": "6", "lineNumber": 6,
+          "lineName": "Nám. Marat. mieru - Staničné nám.", "ezLineType": "tram", "ezVehicleType": "TRAM",
+          "firmaID": 1000, "uniqueID": "6/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1277913, "delayMinutes": 2, "latitude": 48.71662, "longitude": 21.26051,
+      "lastStopOrder": 11, "isOnStop": false, "tooltip": "Košice, Havlíčkova → Košice, Socha Jána Pavla II.",
+      "timeTableTrip": {
+        "tripID": 1003222625, "ezTripDirection": "back",
+        "destinationStopName": "Socha Jána Pavla II.", "destinationCityName": "Košice",
+        "lowFloor": true, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013473, "lineType": 1, "line": "1", "lineNumber": 1,
+          "lineName": "Havlíčkova - Važecká", "ezLineType": "tram", "ezVehicleType": "TRAM",
+          "firmaID": 1000, "uniqueID": "1/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276481, "delayMinutes": 0, "latitude": 48.72095, "longitude": 21.26335,
+      "lastStopOrder": 20, "isOnStop": false, "tooltip": "Košice, Lingov → Košice, KVP, kláštor",
+      "timeTableTrip": {
+        "tripID": 1003257521, "ezTripDirection": "there",
+        "destinationStopName": "KVP, kláštor", "destinationCityName": "Košice",
+        "lowFloor": false, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013728, "lineType": 1, "line": "71", "lineNumber": 71,
+          "lineName": "Lingov - KVP, kláštor", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "71/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276512, "delayMinutes": 1, "latitude": 48.70310, "longitude": 21.24680,
+      "lastStopOrder": 8, "isOnStop": false, "tooltip": "Košice, Aut. stanica → Košice, Havlíčkova",
+      "timeTableTrip": {
+        "tripID": 1003261000, "ezTripDirection": "there",
+        "destinationStopName": "Havlíčkova", "destinationCityName": "Košice",
+        "lowFloor": true, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013690, "lineType": 1, "line": "16", "lineNumber": 16,
+          "lineName": "Aut. stanica - Ťahanovce", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "16/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276099, "delayMinutes": 0, "latitude": 48.72550, "longitude": 21.25400,
+      "lastStopOrder": 3, "isOnStop": false, "tooltip": "Košice, Staničné nám. → Košice, Lingov",
+      "timeTableTrip": {
+        "tripID": 1003262010, "ezTripDirection": "there",
+        "destinationStopName": "Lingov", "destinationCityName": "Košice",
+        "lowFloor": false, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013800, "lineType": 1, "line": "N1", "lineNumber": 91,
+          "lineName": "Staničné nám. - Lingov", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "N1/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 2703175, "delayMinutes": 0, "latitude": 48.72010, "longitude": 21.26818,
+      "lastStopOrder": 1, "isOnStop": true, "tooltip": "Košice, AS → Vyšné Nemecké, št.hr.",
+      "timeTableTrip": {
+        "tripID": 1001272039, "ezTripDirection": "there",
+        "destinationStopName": "št.hr.", "destinationCityName": "Vyšné Nemecké",
+        "lowFloor": true, "canceled": false, "operatorID": 18020, "operatorName": "eurobus",
+        "timeTableLine": {
+          "lineID": 1001010218, "lineType": 2, "line": "802401", "lineNumber": 802401,
+          "lineName": "Košice - Sečovce - Michalovce - Sobrance - Vyšné Nemecké", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1001, "uniqueID": "802401/1001", "ezIsTrain": false, "ezIsUrban": false, "ezIsBus": true,
+          "supervisorName": "eurobus"
+        }
+      }
+    },
+    {
+      "vehicleID": 2703188, "delayMinutes": 4, "latitude": 48.71980, "longitude": 21.26760,
+      "lastStopOrder": 1, "isOnStop": false, "tooltip": "Košice, AS → Kecerovce",
+      "timeTableTrip": {
+        "tripID": 1001272400, "ezTripDirection": "there",
+        "destinationStopName": "Vtáčkovce", "destinationCityName": "Kecerovce",
+        "lowFloor": false, "canceled": false, "operatorID": 18020, "operatorName": "eurobus",
+        "timeTableLine": {
+          "lineID": 1001010268, "lineType": 2, "line": "802446", "lineNumber": 802446,
+          "lineName": "Košice - Hrašovík - Beniakovce - Čižatice - Kecerovce", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1001, "uniqueID": "802446/1001", "ezIsTrain": false, "ezIsUrban": false, "ezIsBus": true,
+          "supervisorName": "eurobus"
+        }
+      }
+    },
+    {
+      "vehicleID": 3105346, "delayMinutes": 0, "latitude": 48.72300, "longitude": 21.26900,
+      "lastStopOrder": 5, "isOnStop": false, "tooltip": "Sobrance → Košice",
+      "timeTableTrip": {
+        "tripID": 1005005346, "ezTripDirection": "back",
+        "destinationStopName": "Sobrance", "destinationCityName": "Sobrance",
+        "lowFloor": false, "canceled": false, "operatorID": 18090, "operatorName": "ARRIVA Michalovce",
+        "timeTableLine": {
+          "lineID": 1005005346, "lineType": 2, "line": "809403", "lineNumber": 809403,
+          "lineName": "Nižné Nemecké - Sobrance - Michalovce - Košice", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1005, "uniqueID": "809403/1005", "ezIsTrain": false, "ezIsUrban": false, "ezIsBus": true,
+          "supervisorName": "ARRIVA Michalovce"
+        }
+      }
+    },
+    {
+      "vehicleID": 6432001, "delayMinutes": 3, "latitude": 48.72207, "longitude": 21.26659,
+      "lastStopOrder": 2, "isOnStop": false, "tooltip": "Košice → Moldava nad Bodvou mesto",
+      "timeTableTrip": {
+        "tripID": 950593523, "ezTripDirection": "there",
+        "destinationStopName": "Moldava nad Bodvou mesto", "destinationCityName": "Moldava nad Bodvou",
+        "lowFloor": false, "canceled": false, "operatorID": 11110, "operatorName": "ŽSSK a.s.",
+        "timeTableLine": {
+          "lineID": 950593523, "lineType": 31, "line": "Os 6432", "lineNumber": 6432,
+          "lineName": "", "ezLineType": "train", "ezVehicleType": null,
+          "firmaID": 950, "uniqueID": "6432/950", "ezIsTrain": true, "ezIsUrban": false, "ezIsBus": false,
+          "supervisorName": "ŽSSK a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 6525001, "delayMinutes": 0, "latitude": 48.72150, "longitude": 21.26700,
+      "lastStopOrder": 1, "isOnStop": true, "tooltip": "Košice → Praha",
+      "timeTableTrip": {
+        "tripID": 950593999, "ezTripDirection": "there",
+        "destinationStopName": "Praha hl.n.", "destinationCityName": "Praha",
+        "lowFloor": false, "canceled": false, "operatorID": 11110, "operatorName": "ŽSSK a.s.",
+        "timeTableLine": {
+          "lineID": 950593999, "lineType": 25, "line": "Ex 525", "lineNumber": 525,
+          "lineName": "", "ezLineType": "train", "ezVehicleType": null,
+          "firmaID": 950, "uniqueID": "525/950", "ezIsTrain": true, "ezIsUrban": false, "ezIsBus": false,
+          "supervisorName": "ŽSSK a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276481, "delayMinutes": 0, "latitude": 48.72099, "longitude": 21.26340,
+      "lastStopOrder": 20, "isOnStop": false, "tooltip": "duplicate row for a bus mid-changeover",
+      "timeTableTrip": {
+        "tripID": 1003257599, "ezTripDirection": "there",
+        "destinationStopName": "KVP, kláštor", "destinationCityName": "Košice",
+        "lowFloor": false, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013728, "lineType": 1, "line": "71", "lineNumber": 71,
+          "lineName": "Lingov - KVP, kláštor", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "71/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276600, "delayMinutes": 0, "latitude": 48.72000, "longitude": 21.25000,
+      "lastStopOrder": 4, "isOnStop": false, "tooltip": "canceled MHD trip",
+      "timeTableTrip": {
+        "tripID": 1003263000, "ezTripDirection": "there",
+        "destinationStopName": "Šebastovce", "destinationCityName": "Košice",
+        "lowFloor": true, "canceled": true, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013673, "lineType": 1, "line": "12", "lineNumber": 12,
+          "lineName": "Podhradová - Šebastovce", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "12/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276601, "delayMinutes": 0, "latitude": 0, "longitude": 0,
+      "lastStopOrder": 1, "isOnStop": false, "tooltip": "MHD vehicle with no position yet",
+      "timeTableTrip": {
+        "tripID": 1003264000, "ezTripDirection": "there",
+        "destinationStopName": "Staničné námestie", "destinationCityName": "Košice",
+        "lowFloor": false, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013455, "lineType": 1, "line": "3", "lineNumber": 3,
+          "lineName": "Vozovňa - Staničné nám.", "ezLineType": "tram", "ezVehicleType": "TRAM",
+          "firmaID": 1000, "uniqueID": "3/1000", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 1276602, "delayMinutes": 0, "latitude": 48.71500, "longitude": 21.25800,
+      "lastStopOrder": 6, "isOnStop": false, "tooltip": "DPMK vehicle but the ezIsUrban flag is missing",
+      "timeTableTrip": {
+        "tripID": 1003265000, "ezTripDirection": "there",
+        "destinationStopName": "Dom umenia", "destinationCityName": "Košice",
+        "lowFloor": true, "canceled": false, "operatorID": 18024, "operatorName": "Dopravný podnik mesta Košice a.s.",
+        "timeTableLine": {
+          "lineID": 1000013111, "lineType": 1, "line": "23", "lineNumber": 23,
+          "lineName": "Havlíčkova - Letisko", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1000, "uniqueID": "23/1000", "ezIsTrain": false, "ezIsBus": false,
+          "supervisorName": "Dopravný podnik mesta Košice a.s."
+        }
+      }
+    },
+    {
+      "vehicleID": 3017071, "delayMinutes": 2, "latitude": 48.71900, "longitude": 21.25600,
+      "lastStopOrder": 9, "isOnStop": false, "tooltip": "Prešov, Sídlisko III → Prešov, Železničná stanica",
+      "timeTableTrip": {
+        "tripID": 1030030071, "ezTripDirection": "there",
+        "destinationStopName": "Železničná stanica", "destinationCityName": "Prešov",
+        "lowFloor": true, "canceled": false, "operatorID": 17071, "operatorName": "DPMP Prešov",
+        "timeTableLine": {
+          "lineID": 1030030004, "lineType": 1, "line": "4", "lineNumber": 4,
+          "lineName": "Sídlisko III - Železničná stanica", "ezLineType": "bus", "ezVehicleType": "BUS",
+          "firmaID": 1030, "uniqueID": "4/1030", "ezIsTrain": false, "ezIsUrban": true, "ezIsBus": false,
+          "supervisorName": "DPMP Prešov"
+        }
+      }
+    }
+  ]
+}

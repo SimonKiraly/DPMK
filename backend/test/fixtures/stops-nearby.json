@@ -1,0 +1,253 @@
+{
+ "status": "ok",
+ "_comment": "Real /navigation/stops/nearby capture (trimmed to 6).",
+ "stops": [
+  {
+   "stopID": 1000000077,
+   "stopName": "Alžbetina,  Rektorát UPJŠ",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": true,
+   "forBusTransport": false,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 1,
+     "latitude": 48.71887,
+     "longitude": 21.25272,
+     "tooltip": "Alžbetina, Rektorát UPJŠ, ",
+     "platformName": ""
+    },
+    {
+     "platformNumber": 2,
+     "latitude": 48.71977,
+     "longitude": 21.25256,
+     "tooltip": "Alžbetina, Rektorát UPJŠ, ",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [
+    "12",
+    "N2"
+   ],
+   "passingLines": {
+    "1": [
+     {
+      "lineType": "bus",
+      "lines": [
+       "12",
+       "N2"
+      ]
+     }
+    ],
+    "2": [
+     {
+      "lineType": "bus",
+      "lines": [
+       "12",
+       "N2"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stopID": 1040000273,
+   "stopName": "Jakabov palác",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": false,
+   "forBusTransport": false,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 1,
+     "latitude": 48.721731,
+     "longitude": 21.262836,
+     "tooltip": "Košice,  Jakabov palác; Bikesharing Antik SmartWay; https://www.antiksmartway.sk",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [],
+   "passingLines": []
+  },
+  {
+   "stopID": 19496,
+   "stopName": "Námestie osloboditeľov",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": false,
+   "forBusTransport": true,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 1,
+     "latitude": 48.71727,
+     "longitude": 21.260611,
+     "tooltip": "Košice, Námestie osloboditeľov",
+     "platformName": ""
+    },
+    {
+     "platformNumber": 2,
+     "latitude": 48.716572,
+     "longitude": 21.2617,
+     "tooltip": "Košice, Námestie osloboditeľov",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [
+    "802405",
+    "802408",
+    "802409",
+    "802410",
+    "802411",
+    "802414",
+    "802415",
+    "802417",
+    "802418",
+    "802419",
+    "802420",
+    "802422",
+    "802423",
+    "802427",
+    "802428",
+    "802430",
+    "802431",
+    "802450",
+    "802452",
+    "802453",
+    "802454",
+    "807478",
+    "808405",
+    "811407",
+    "811410",
+    "811419"
+   ],
+   "passingLines": []
+  },
+  {
+   "stopID": 1000000112,
+   "stopName": "Jakabov palác",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": true,
+   "forBusTransport": false,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 1,
+     "latitude": 48.72078,
+     "longitude": 21.26342,
+     "tooltip": "Jakabov palác, ",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [
+    "16",
+    "17",
+    "19",
+    "21",
+    "23",
+    "24",
+    "25",
+    "30",
+    "33",
+    "38",
+    "71",
+    "72",
+    "N1",
+    "N2",
+    "N3",
+    "N4",
+    "N6",
+    "N7"
+   ],
+   "passingLines": {
+    "1": [
+     {
+      "lineType": "bus",
+      "lines": [
+       "16",
+       "17",
+       "19",
+       "21",
+       "23",
+       "24",
+       "25",
+       "30",
+       "33",
+       "38",
+       "71",
+       "72",
+       "N1",
+       "N2",
+       "N3",
+       "N4",
+       "N6",
+       "N7"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stopID": 1000000076,
+   "stopName": "Slovenský rozhlas",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": true,
+   "forBusTransport": false,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 2,
+     "latitude": 48.72179,
+     "longitude": 21.25202,
+     "tooltip": "Slovenský rozhlas, ",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [
+    "12",
+    "N2"
+   ],
+   "passingLines": {
+    "2": [
+     {
+      "lineType": "bus",
+      "lines": [
+       "12",
+       "N2"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "stopID": 1040000260,
+   "stopName": "Aupark",
+   "stopCity": "Košice",
+   "latitude": null,
+   "longitude": null,
+   "forUrbanPublicTransport": false,
+   "forBusTransport": false,
+   "forRail": false,
+   "platforms": [
+    {
+     "platformNumber": 1,
+     "latitude": 48.717103,
+     "longitude": 21.261439,
+     "tooltip": "Košice,  Aupark; Bikesharing Antik SmartWay; https://www.antiksmartway.sk",
+     "platformName": ""
+    }
+   ],
+   "ezLines": [],
+   "passingLines": []
+  }
+ ]
+}
