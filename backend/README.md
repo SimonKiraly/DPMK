@@ -101,36 +101,58 @@ Ubian/DPMK credential lives **only** in Railway env vars, never in the mobile ap
 
 ## Deploy to Railway
 
-The repo root is an **Expo app** (`package.json` → `"start": "expo start"`). If
-Railway builds from the root with Nixpacks it will run the Expo dev server, not
-this backend. To prevent that, deployment is pinned by two committed files:
+The repo root is an **Expo app** (`package.json` → `"start": "expo start"`). Left
+to auto-detect, Railway's Railpack/Nixpacks builder runs the Expo dev server, not
+this backend. Deployment is pinned by three committed files:
 
-- **`/railway.json`** — `builder: DOCKERFILE`, `dockerfilePath: backend/Dockerfile`,
-  `startCommand: node dist/server.js`, `healthcheckPath: /api/health`.
-- **`backend/Dockerfile`** — multi-stage: `npm ci` → `npm run build` (tsc →
-  `dist/`) → `npm prune --omit=dev` → runtime image runs `node dist/server.js`.
-  Build context is the repo root; `/.dockerignore` trims it to `backend/` so the
-  Expo app and its `node_modules` never enter the image.
+- **`/Dockerfile`** (repo root) — multi-stage: `npm ci` → `npm run build` (tsc →
+  `dist/`) → `npm prune --omit=dev` → runtime image runs `node dist/server.js`
+  on `node:20-slim`. Only `backend/` is copied in. At the repo root it is
+  **auto-detected** by Railway as `./Dockerfile`, so the Dockerfile builder wins
+  even before `railway.json` is parsed.
+- **`/railway.json`** — `build.builder = "DOCKERFILE"` (explicit; overrides any
+  dashboard builder), `deploy.healthcheckPath = /api/health`.
+- **`/.dockerignore`** — keeps the Expo app + every `node_modules` out of the
+  build context.
 
-Steps:
+The image sets **no `PORT`** — Railway injects `PORT` at runtime and the server
+binds `0.0.0.0:$PORT` (`config.ts` → `server.ts`); `8080` is only the local
+fallback.
 
-1. Push to GitHub.
-2. Railway → **New Project** → **Deploy from GitHub repo** → pick this repo.
-   Leave **Root Directory** empty (the repo root — `railway.json` lives there).
-   Railway detects `railway.json` and builds `backend/Dockerfile` automatically.
-3. Service → **Variables** → `NODE_ENV=production` (add any other overrides from
-   the table above; **`PORT` is injected by Railway — do not set it**).
-4. Health check path (`/api/health`) and restart policy come from `railway.json`.
-5. Service → **Settings** → **Networking** → generate a public domain.
-6. Deploy. `curl https://<service>.up.railway.app/api/health` → backend JSON
-   (`{"ok":true,...}`), **not** an Expo manifest.
+### Railway service settings (dashboard — do these once)
 
-Local parity check (same image Railway builds):
+`railway.json` is only read from the service's **Root Directory**, and dashboard
+overrides win when there is no code config to override them. So:
+
+1. Service → **Settings → Source** → **Root Directory** = empty / `/`
+   (the repo root, where `Dockerfile` and `railway.json` live). **If this is set
+   to `backend`, Railway never sees `railway.json` and falls back to Railpack —
+   this was the outage.**
+2. Service → **Settings → Build** → **Builder** = `Dockerfile` (or Automatic).
+   Clear any **Custom Build Command** and **Custom Start Command**.
+3. Service → **Settings → Deploy** → clear any **Custom Start Command**
+   (the Docker `CMD` — `node dist/server.js` — is authoritative).
+4. Service → **Variables** → `NODE_ENV=production`. **Do not set `PORT`.**
+5. Service → **Settings → Networking → Public Networking** → the domain's
+   **target port** must match what the app logs on boot (Railway's injected
+   `PORT`, normally `8080`). Re-generate the domain if it is stuck on `8081`
+   from the earlier Expo deploy.
+6. Redeploy. Build logs must show `FROM node:20-slim` (Docker), not
+   `node@24` (Railpack).
+
+### Verify
 
 ```bash
-docker build -f backend/Dockerfile -t mhd-backend .   # run from repo root
-docker run --rm -e PORT=8080 -p 8080:8080 mhd-backend
-curl -s localhost:8080/api/health
+curl -s https://<service>.up.railway.app/api/health     # {"ok":true,...} — not an Expo manifest
+curl -s https://<service>.up.railway.app/api/vehicles | jq '[.vehicles[].operatorId] | unique'   # [18024]
+```
+
+Local parity (needs Docker; run from the repo root):
+
+```bash
+docker build -t mhd-backend .
+docker run --rm -e PORT=4321 -p 4321:4321 mhd-backend
+curl -s localhost:4321/api/health
 ```
 
 **Scale:** run **1 instance**. The whole MHD fleet is ~66 objects; a single
@@ -142,7 +164,8 @@ built now).
 ## Layout
 
 ```
-Dockerfile             production image (used by Railway via /railway.json)
+(repo root)/Dockerfile   production image Railway builds (auto-detected)
+(repo root)/railway.json  builder = DOCKERFILE, healthcheck = /api/health
 src/
   server.ts            Fastify bootstrap, plugins, error handler, listen 0.0.0.0:$PORT
   config.ts            Zod-validated env → typed config

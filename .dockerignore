@@ -1,4 +1,4 @@
-# Build context for backend/Dockerfile is the repo root. The image only ever
+# Build context for the root Dockerfile is the repo root. The image only ever
 # COPYs backend/{package*.json,tsconfig.json,src}. Keep everything heavy or
 # app-specific — above all the Expo / React Native app and all node_modules —
 # out of the context so builds are fast and never pull in the mobile app.
