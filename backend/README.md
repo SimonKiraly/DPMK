@@ -101,17 +101,37 @@ Ubian/DPMK credential lives **only** in Railway env vars, never in the mobile ap
 
 ## Deploy to Railway
 
-1. Push this repo to GitHub (the `backend/` folder is a sibling of the Expo app;
-   the app build ignores it).
+The repo root is an **Expo app** (`package.json` → `"start": "expo start"`). If
+Railway builds from the root with Nixpacks it will run the Expo dev server, not
+this backend. To prevent that, deployment is pinned by two committed files:
+
+- **`/railway.json`** — `builder: DOCKERFILE`, `dockerfilePath: backend/Dockerfile`,
+  `startCommand: node dist/server.js`, `healthcheckPath: /api/health`.
+- **`backend/Dockerfile`** — multi-stage: `npm ci` → `npm run build` (tsc →
+  `dist/`) → `npm prune --omit=dev` → runtime image runs `node dist/server.js`.
+  Build context is the repo root; `/.dockerignore` trims it to `backend/` so the
+  Expo app and its `node_modules` never enter the image.
+
+Steps:
+
+1. Push to GitHub.
 2. Railway → **New Project** → **Deploy from GitHub repo** → pick this repo.
-3. Service → **Settings** → **Root Directory** = `backend`.
-   Nixpacks reads `backend/nixpacks.toml` (Node 20, `npm ci`, `npm run build`,
-   `node dist/server.js`).
-4. Service → **Variables** → add any overrides from the table above
-   (`NODE_ENV=production` at minimum; `PORT` is automatic).
-5. Service → **Settings** → **Health Check Path** = `/api/health`.
-6. Service → **Settings** → **Networking** → generate a public domain.
-7. Deploy. Check `https://<your-service>.up.railway.app/api/health`.
+   Leave **Root Directory** empty (the repo root — `railway.json` lives there).
+   Railway detects `railway.json` and builds `backend/Dockerfile` automatically.
+3. Service → **Variables** → `NODE_ENV=production` (add any other overrides from
+   the table above; **`PORT` is injected by Railway — do not set it**).
+4. Health check path (`/api/health`) and restart policy come from `railway.json`.
+5. Service → **Settings** → **Networking** → generate a public domain.
+6. Deploy. `curl https://<service>.up.railway.app/api/health` → backend JSON
+   (`{"ok":true,...}`), **not** an Expo manifest.
+
+Local parity check (same image Railway builds):
+
+```bash
+docker build -f backend/Dockerfile -t mhd-backend .   # run from repo root
+docker run --rm -e PORT=8080 -p 8080:8080 mhd-backend
+curl -s localhost:8080/api/health
+```
 
 **Scale:** run **1 instance**. The whole MHD fleet is ~66 objects; a single
 Fastify process serves thousands of clients from RAM. A second instance would
@@ -122,6 +142,7 @@ built now).
 ## Layout
 
 ```
+Dockerfile             production image (used by Railway via /railway.json)
 src/
   server.ts            Fastify bootstrap, plugins, error handler, listen 0.0.0.0:$PORT
   config.ts            Zod-validated env → typed config
