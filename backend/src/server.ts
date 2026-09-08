@@ -15,6 +15,8 @@ import { config } from './config.js';
 import { HttpError } from './lib/validate.js';
 import { UbianError } from './ubian/client.js';
 import * as poller from './fleet/poller.js';
+import * as alertPoller from './alerts/poller.js';
+import { alertRoutes } from './routes/alerts.js';
 import { healthRoutes } from './routes/health.js';
 import { networkRoutes } from './routes/network.js';
 import { searchRoutes } from './routes/search.js';
@@ -90,6 +92,7 @@ export async function buildServer() {
   await app.register(stopRoutes);
   await app.register(networkRoutes);
   await app.register(searchRoutes);
+  await app.register(alertRoutes);
 
   return app;
 }
@@ -98,6 +101,7 @@ async function main() {
   const app = await buildServer();
 
   poller.start(app.log);
+  alertPoller.start(app.log);
 
   try {
     await app.listen({ host: '0.0.0.0', port: config.port });
@@ -113,6 +117,7 @@ async function main() {
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, 'shutting down');
     poller.stop();
+    alertPoller.stop();
     await app.close();
     process.exit(0);
   };

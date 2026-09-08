@@ -44,6 +44,15 @@ const EnvSchema = z.object({
   VEHICLE_POLL_MS: int(10000, 2000),
   POLLER_IDLE_STOP_MS: int(120000, 0),
 
+  // Service alerts — DPMK "Aktuality" RSS (public, no key).
+  DPMK_RSS_URL: z.string().url().default('https://www.dpmk.sk/aktuality/rss'),
+  ALERTS_POLL_MS: int(180_000, 30_000),
+  ALERTS_TIMEOUT_MS: int(10_000, 1_000),
+  /** An operational notice this long past its last feed appearance → `ended`. */
+  ALERTS_OPERATIONAL_GRACE_MS: int(2 * 60 * 60_000, 0),
+  /** A planned/other notice gone from the feed this long → `ended`. */
+  ALERTS_PLANNED_RETENTION_MS: int(30 * 24 * 60 * 60_000, 0),
+
   CORS_ORIGINS: z.string().default('*'),
   RATE_LIMIT_MAX: int(120, 1),
   RATE_LIMIT_WINDOW: z.string().default('1 minute'),
@@ -94,6 +103,15 @@ function load() {
       idleStopMs: e.POLLER_IDLE_STOP_MS,
       /** Snapshot older than this is reported `stale: true`. */
       staleAfterMs: Math.max(30_000, e.VEHICLE_POLL_MS * 3),
+    },
+
+    alerts: {
+      rssUrl: e.DPMK_RSS_URL.replace(/\/+$/, ''),
+      pollMs: e.ALERTS_POLL_MS,
+      timeoutMs: e.ALERTS_TIMEOUT_MS,
+      staleAfterMs: Math.max(10 * 60_000, e.ALERTS_POLL_MS * 3),
+      operationalGraceMs: e.ALERTS_OPERATIONAL_GRACE_MS,
+      plannedRetentionMs: e.ALERTS_PLANNED_RETENTION_MS,
     },
 
     cors: { origin: corsOrigins as true | string[] },

@@ -10,7 +10,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Text } from '@/components/ui/Text';
 import { TextField } from '@/components/ui/TextField';
 import { colors } from '@/constants/theme';
-import { PLACES, PLACE_BY_ID, searchPlaces } from '@/data/places';
+import { PLACES, PLACE_BY_ID, getPlace, searchPlaces } from '@/data/places';
 import { useRootNavigation } from '@/navigation/hooks';
 import type { RootStackParamList } from '@/navigation/types';
 import type { RouteProp } from '@react-navigation/native';
@@ -37,7 +37,7 @@ export function PlannerScreen() {
   const labelFor = (id: string | null): string => {
     if (!id) return '';
     if (id === CURRENT_LOCATION) return 'Aktuálna poloha';
-    return PLACE_BY_ID[id]?.name ?? id;
+    return getPlace(id)?.name ?? id;
   };
 
   const pick = (id: string) => {

@@ -19,7 +19,7 @@ import { getStopDepartures } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
 import { useFavoriteStops } from '@/store/useFavoritesStore';
 import { selectActiveTicket, useTicketStore } from '@/store/useTicketStore';
-import { useNotificationsByKind } from '@/store/useNotificationStore';
+import { useTopAlert } from '@/store/useAlertsStore';
 import { useUserStore } from '@/store/useUserStore';
 import { formatRelativeMinutes } from '@/utils/format';
 
@@ -43,7 +43,7 @@ export function HomeScreen() {
   const user = useUserStore((s) => s.user);
   const activeTicket = useTicketStore(selectActiveTicket);
   const favoriteStops = useFavoriteStops();
-  const alerts = useNotificationsByKind('disruption').slice(0, 1);
+  const topAlert = useTopAlert();
 
   const { stops: nearby, usingFallback } = useNearbyStops({ limit: 3 });
 
@@ -172,9 +172,9 @@ export function HomeScreen() {
             />
           )}
 
-          {/* service alert */}
-          {alerts.map((alert) => (
-            <Pressable key={alert.id} onPress={() => navigation.navigate('Main', { screen: 'NotificationsTab' })}>
+          {/* service alert — live from the backend DPMK feed */}
+          {topAlert ? (
+            <Pressable onPress={() => navigation.navigate('Main', { screen: 'NotificationsTab' })}>
               <View
                 style={{
                   backgroundColor: colors.errorTint,
@@ -200,15 +200,17 @@ export function HomeScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text variant="body" weight="extrabold" color="#8E2F2C">
-                    {alert.title}
+                    {topAlert.affectedRoutes.length
+                      ? `${topAlert.affectedRoutes.join(', ')} · ${topAlert.title}`
+                      : topAlert.title}
                   </Text>
                   <Text variant="caption" color="#A4514E" style={{ marginTop: 3 }} numberOfLines={2}>
-                    {alert.body}
+                    {topAlert.description}
                   </Text>
                 </View>
               </View>
             </Pressable>
-          ))}
+          ) : null}
 
           {/* upcoming departures */}
           {upcoming ? (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { notificationService } from '@/services/notificationService';
+import { useAlertsStore } from '@/store/useAlertsStore';
 import { useNotificationStore } from '@/store/useNotificationStore';
 import { useTicketStore } from '@/store/useTicketStore';
 import { useUserStore } from '@/store/useUserStore';
@@ -56,17 +57,23 @@ export function useAppBootstrap(): { ready: boolean } {
   };
 
   // Sweep on mount, every 15s, and whenever the app returns to the foreground.
+  // The same lifecycle refreshes DPMK service alerts from the backend.
   useEffect(() => {
     if (!hydrated) return;
     sweep();
+    void useAlertsStore.getState().refresh();
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') sweep();
+      if (state === 'active') {
+        sweep();
+        void useAlertsStore.getState().refresh();
+      }
     });
     return () => sub.remove();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hydrated]);
 
   useInterval(sweep, hydrated ? 15000 : null);
+  useInterval(() => void useAlertsStore.getState().refresh(), hydrated ? 5 * 60_000 : null);
 
   return { ready: hydrated && restored };
 }

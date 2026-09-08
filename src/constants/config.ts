@@ -75,6 +75,31 @@ export const simulation = {
 };
 
 /**
+ * Operating windows for the mock departure board / journey planner, as
+ * minute-of-day in **Košice local time** (`Europe/Bratislava`). `night` wraps
+ * past midnight (start > end).
+ *
+ * These are a **class-level approximation, NOT an exact per-line timetable.**
+ * `23:15–04:30` is DPMK's published **network-wide** night-service span
+ * (https://www.dpmk.sk/cestovanie/nocna-doprava — "Premávajú medzi 23:15 –
+ * 04:30"); `04:00–24:00` is the day span. Their only purpose is to stop a
+ * service class from being offered outside the hours it runs.
+ *
+ * The repository has **no per-line timetable data** — `data/dpmkNetwork.ts` is
+ * route topology only, and `headwayMinutes()` is heuristic. Exact per-line first
+ * / last departure times would require Ubian timetable integration
+ * (`/navigation/stops/line/time_table`) or ingesting a timetable feed (Open Data
+ * Košice JDF). Until then, **do not invent per-line operating times** — adjust
+ * only these network-wide spans if DPMK changes them.
+ */
+export const serviceHours = {
+  /** Day lines (bus, tram) — day span 04:00 → 24:00. */
+  day: { startMin: 4 * 60, endMin: 24 * 60 },
+  /** Night lines (N1–N7) — DPMK published network-wide span 23:15 → 04:30. */
+  night: { startMin: 23 * 60 + 15, endMin: 4 * 60 + 30 },
+} as const;
+
+/**
  * Real transport data — Ubian departure board for DPMK Košice.
  *
  * `dpmk-odchody.ubian.sk/navigation/*` is a public, unauthenticated JSON API
@@ -105,6 +130,31 @@ export const ubian = {
     search: 5 * 60 * 1000,
   },
   attribution: 'Dopravný podnik mesta Košice, a.s. · opendata.kosice.sk',
+};
+
+/**
+ * MHD Košice backend (Railway) — the app's live vehicle source.
+ *
+ *   iPhone app ──HTTPS──▶ backend ──▶ Ubian
+ *
+ * The backend performs the authoritative MHD filter and normalisation, so the
+ * app consumes `/api/vehicles` directly. `EXPO_PUBLIC_*` vars are inlined by
+ * Metro at bundle time — this is only a public base URL, never a secret. The
+ * defaults below are the production values, so `.env` is optional (see
+ * `.env.example`).
+ *
+ * `enabled` is the feature flag: set `EXPO_PUBLIC_USE_BACKEND_API=false` to make
+ * the app ignore the backend and use the direct Ubian / sample-data path only
+ * (the pre-backend behaviour).
+ */
+export const backendApi = {
+  baseUrl: (process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://dpmk-production.up.railway.app').replace(
+    /\/+$/,
+    '',
+  ),
+  enabled: process.env.EXPO_PUBLIC_USE_BACKEND_API !== 'false',
+  /** Per-request abort; a little tighter than the direct-Ubian timeout. */
+  requestTimeoutMs: 8000,
 };
 
 /** Official static timetable — Open Data Košice (CC BY 4.0). Backend ingest only. */

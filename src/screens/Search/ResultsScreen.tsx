@@ -8,7 +8,7 @@ import { Chip } from '@/components/ui/Chip';
 import { Screen } from '@/components/ui/Screen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/StateViews';
 import { RouteResultCard } from '@/components/transport/RouteResultCard';
-import { PLACE_BY_ID } from '@/data/places';
+import { getPlace } from '@/data/places';
 import { planJourneysBetweenPlaces } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
 import type { RootStackParamList } from '@/navigation/types';
@@ -26,8 +26,8 @@ export function ResultsScreen() {
   const navigation = useRootNavigation();
   const { fromPlaceId, toPlaceId, departAt } = useRoute<RouteProp<RootStackParamList, 'Results'>>().params;
 
-  const from = PLACE_BY_ID[fromPlaceId];
-  const to = PLACE_BY_ID[toPlaceId];
+  const from = getPlace(fromPlaceId);
+  const to = getPlace(toPlaceId);
 
   const [preference, setPreference] = useState<JourneyPreference>('fastest');
   const [journeys, setJourneys] = useState<Journey[]>([]);

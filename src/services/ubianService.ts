@@ -191,19 +191,27 @@ function classifyUbianLine(line: UbianLine): UbianLineClass {
 }
 
 /**
- * Košice city public transport (MHD) vs everything else.
+ * Košice city public transport (MHD) vs everything else — the fallback filter.
+ *
+ * NOTE: the authoritative MHD filter runs in the backend
+ * (`backend/src/ubian/mhdFilter.ts`). This client is only the fallback path used
+ * when the backend is unreachable; it is kept in sync with the backend rule so
+ * the fallback fleet matches what the backend would have returned.
  *
  * `/navigation/vehicles/nearby` returns *every* vehicle around Košice, not just
  * DPMK's: eurobus (prímestská / suburban), ARRIVA (intercity) and ŽSSK (rail)
- * all appear. Each line carries `ezIsUrban` — Ubian's own "mestská doprava"
- * flag: `true` for DPMK MHD, `false` for every regional carrier. On every
- * observed vehicle it agrees with `firmaID` 1000 and trip `operatorID` 18024
- * ("Dopravný podnik mesta Košice a.s."), so `ezIsUrban === true` is the check —
- * no operator whitelist, no vehicle-id list, no colour heuristics. Strict
- * `=== true` means a line with the flag absent is treated as non-MHD.
+ * all appear, and so does DPMP Prešov (another city's MHD, ~35 km away, whose
+ * line numbers collide with Košice's). Two conditions, both required:
+ *   1. `ezIsUrban === true` — Ubian's "mestská doprava" flag (rejects eurobus /
+ *      ARRIVA / SAD / ŽSSK). Strict `=== true`: flag absent ⇒ non-MHD.
+ *   2. `firmaID === 1000` — "Dopravný podnik mesta Košice a.s." `ezIsUrban` is
+ *      city-agnostic, so this rejects DPMP Prešov (`firmaID` 1030). Cross-checks
+ *      with trip `operatorID` 18024 on every observed Košice vehicle.
  */
+const DPMK_FIRMA_ID = 1000;
+
 function isKosiceMhdLine(line: UbianLine): boolean {
-  return line.ezIsUrban === true;
+  return line.ezIsUrban === true && line.firmaID === DPMK_FIRMA_ID;
 }
 
 /**

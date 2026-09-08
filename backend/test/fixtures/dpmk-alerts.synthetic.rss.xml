@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Synthetic DPMK "Aktuality" RSS for tests. Operational items are verbatim from a
+  real capture of dpmk.sk/aktuality/rss; the planned item reuses the real body
+  text of the "Docasna zmena zastavovania na Rastislavovej ulici" article; one
+  PR-news item and two deliberately malformed blocks are added, plus a repeat of
+  guid 119534 to exercise deduplication.
+-->
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0" xml:base="https://www.dpmk.sk/">
+  <channel>
+    <title>Aktuality</title>
+    <link>https://www.dpmk.sk/</link>
+    <description/>
+    <language>sk</language>
+
+    <item>
+      <title>VÝPADOK SPOJA 15</title>
+      <link>https://www.dpmk.sk/aktuality/2026/vypadok-spoja-15-86</link>
+      <description>&lt;span&gt;VÝPADOK SPOJA 15&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;20:00&lt;/p&gt;&lt;p&gt;&amp;nbsp;MIESTO: &amp;nbsp;Obchodné centrum Cassovia smer Exnárova&lt;br&gt;&amp;nbsp;ČAS: 20:00&lt;br&gt;&amp;nbsp;DOTKNUTÉ LINKY: 15&lt;br&gt;&amp;nbsp;OBMEDZENIE: výpadok spoja&lt;br&gt;&amp;nbsp;DÔVOD: porucha vozidla&lt;br&gt;&amp;nbsp;PREDPOKLAD TRVANIA OBMEDZENÍ:&amp;nbsp;&lt;br&gt;&amp;nbsp;20:20 odchod nasledujúceho spoja zo zastávky Obchodné centrum Cassovia smer Exnárova&amp;nbsp;&lt;/p&gt;&lt;/div&gt;
+&lt;span&gt;&lt;span&gt;Informátor&lt;/span&gt;&lt;/span&gt;
+&lt;span&gt;&lt;time datetime="2026-09-08T20:01:23+02:00"&gt;8.9.2026 - 20:01&lt;/time&gt;&lt;/span&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 18:01:23 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119534 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>VÝPADOK SPOJA 27</title>
+      <link>https://www.dpmk.sk/aktuality/2026/vypadok-spoja-27-91</link>
+      <description>&lt;span&gt;VÝPADOK SPOJA 27&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;07:10&lt;/p&gt;&lt;p&gt;&amp;nbsp;MIESTO: Madridská smer Staničné námestie&lt;br&gt;&amp;nbsp;ČAS: 07:10&lt;/p&gt;&lt;p&gt;&amp;nbsp;MIESTO: Staničné námestie smer Madridská&lt;br&gt;&amp;nbsp;ČAS: 07:37&lt;/p&gt;&lt;p&gt;&amp;nbsp;DOTKNUTÉ LINKY: 27&lt;br&gt;&amp;nbsp;OBMEDZENIE: výpadok spoja&lt;br&gt;&amp;nbsp;DÔVOD: porucha vozidla&lt;/p&gt;&lt;/div&gt;
+&lt;span&gt;&lt;span&gt;Informátor&lt;/span&gt;&lt;/span&gt;
+&lt;span&gt;&lt;time datetime="2026-09-08T07:11:58+02:00"&gt;8.9.2026 - 07:11&lt;/time&gt;&lt;/span&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 05:11:58 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119528 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>Dočasná zmena zastavovania na Rastislavovej ulici</title>
+      <link>https://www.dpmk.sk/aktuality/2026/docasna-zmena-zastavovania-na-rastislavovej-ulici</link>
+      <description>&lt;span&gt;Dočasná zmena zastavovania na Rastislavovej ulici&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&lt;strong&gt;Košice, 4. september 2026&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;&amp;nbsp;Dopravný podnik mesta Košice, a.s. (DPMK) upozorňuje cestujúcich, že od pondelka 7. septembra 2026 dôjde k dočasnej zmene zastavovania na Rastislavovej ulici z dôvodu rekonštrukčných prác v okolí zastávok Verejný cintorín a Poľská.&lt;/p&gt;&lt;p&gt;Zastávka &lt;strong&gt;Verejný cintorín&lt;/strong&gt; smer Stará nemocnica (pre linky 12 a&amp;nbsp;54) sa presúva na koniec Cintorínskej ulice.&lt;/p&gt;&lt;p&gt;Zastávka &lt;strong&gt;Poľská&lt;/strong&gt; smer Stará nemocnica (pre linky 12 a&amp;nbsp;54) je zrušená bez náhrady. Cestujúcim odporúčame využiť zastávku &lt;strong&gt;Triton&lt;/strong&gt; alebo &lt;strong&gt;Verejný cintorín&lt;/strong&gt;.&lt;/p&gt;&lt;p&gt;&lt;strong&gt;Kontakt pre médiá&lt;/strong&gt;: hovorca@dpmk.kosice.sk&lt;/p&gt;&lt;p&gt;Spájame Košičanov už od roku 1891&lt;/p&gt;&lt;/div&gt;
+&lt;span&gt;&lt;span&gt;Informátor&lt;/span&gt;&lt;/span&gt;
+&lt;span&gt;&lt;time datetime="2026-09-04T09:23:00+02:00"&gt;4.9.2026 - 09:23&lt;/time&gt;&lt;/span&gt;</description>
+      <pubDate>Thu, 04 Sep 2026 07:23:00 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119500 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>V septembri prídu do Košíc elektrobusy, nabíjacia infraštruktúra je takmer hotová</title>
+      <link>https://www.dpmk.sk/aktuality/2026/v-septembri-pridu-do-kosic-elektrobusy-nabijacia-infrastruktura-je-takmer-hotova</link>
+      <description>&lt;span&gt;V septembri prídu do Košíc elektrobusy&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;Dopravný podnik mesta Košice investuje do modernizácie vozidlového parku. Prvé elektrobusy začnú premávať v septembri.&lt;/p&gt;&lt;/div&gt;
+&lt;span&gt;&lt;span&gt;Informátor&lt;/span&gt;&lt;/span&gt;
+&lt;span&gt;&lt;time datetime="2026-07-31T10:00:00+02:00"&gt;31.7.2026 - 10:00&lt;/time&gt;&lt;/span&gt;</description>
+      <pubDate>Thu, 31 Jul 2026 08:00:00 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119200 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>UPOZORNENIE NA MEŠKANIE SPOJOV</title>
+      <link>https://www.dpmk.sk/aktuality/2026/upozornenie-na-meskanie-spojov-97</link>
+      <description>&lt;span&gt;UPOZORNENIE NA MEŠKANIE SPOJOV&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;07:35&lt;/p&gt;&lt;p&gt;&amp;nbsp;Z dôvodu zhustenej premávky dochádza k meškaniam na viacerých linkách do 15 minút.&lt;/p&gt;&lt;/div&gt;
+&lt;span&gt;&lt;span&gt;Informátor&lt;/span&gt;&lt;/span&gt;
+&lt;span&gt;&lt;time datetime="2026-09-08T07:35:52+02:00"&gt;8.9.2026 - 07:35&lt;/time&gt;&lt;/span&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 05:35:52 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119529 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>NÁLEZ</title>
+      <link>https://www.dpmk.sk/aktuality/2026/nalez-614</link>
+      <description>&lt;span&gt;NÁLEZ&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;ČAS: 14:45&lt;/p&gt;&lt;p&gt;&amp;nbsp;LINKA: 36&lt;/p&gt;&lt;p&gt;&amp;nbsp;NÁJDENÝ PREDMET: bunda&lt;/p&gt;&lt;/div&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 12:48:48 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119533 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>STRATA</title>
+      <link>https://www.dpmk.sk/aktuality/2026/strata-201</link>
+      <description>&lt;span&gt;STRATA&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;ČAS: 09:10&lt;/p&gt;&lt;p&gt;&amp;nbsp;LINKA: 6&lt;/p&gt;&lt;p&gt;&amp;nbsp;STRATENÝ PREDMET: peňaženka&lt;/p&gt;&lt;/div&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 07:12:00 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119520 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>MALFORMED — NO GUID</title>
+      <link>https://www.dpmk.sk/aktuality/2026/no-guid</link>
+      <description>&lt;p&gt;This item has no guid and must be skipped.&lt;/p&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 06:00:00 +0000</pubDate>
+    </item>
+
+    <item>
+      <title>VÝPADOK SPOJA 999</title>
+      <link>https://www.dpmk.sk/aktuality/2026/broken
+      <description>&lt;p&gt;unterminated tags, garbage &amp; &lt;br &amp;nbsp; ČAS 99:99
+      <guid isPermaLink="false">119111 at https://www.dpmk.sk</guid>
+    </item>
+
+    <item>
+      <title>VÝPADOK SPOJA 15 (repost)</title>
+      <link>https://www.dpmk.sk/aktuality/2026/vypadok-spoja-15-86</link>
+      <description>&lt;span&gt;VÝPADOK SPOJA 15&lt;/span&gt;
+  &lt;div class="field__item"&gt;&lt;p&gt;&amp;nbsp;MIESTO: Obchodné centrum Cassovia smer Exnárova&lt;br&gt;&amp;nbsp;ČAS: 20:00&lt;br&gt;&amp;nbsp;DOTKNUTÉ LINKY: 15&lt;br&gt;&amp;nbsp;OBMEDZENIE: výpadok spoja&lt;br&gt;&amp;nbsp;DÔVOD: porucha vozidla&lt;/p&gt;&lt;/div&gt;</description>
+      <pubDate>Tue, 08 Sep 2026 18:05:00 +0000</pubDate>
+      <dc:creator>Informátor</dc:creator>
+      <guid isPermaLink="false">119534 at https://www.dpmk.sk</guid>
+    </item>
+
+  </channel>
+</rss>

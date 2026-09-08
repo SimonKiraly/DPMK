@@ -4,6 +4,10 @@
     "slug": "mhd-kosice",
     "owner": "kiralydev",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/be49e354-238b-4061-ae82-3e3b3731ba0b"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mhdkosice",

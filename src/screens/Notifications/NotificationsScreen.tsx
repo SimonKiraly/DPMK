@@ -10,8 +10,22 @@ import { colors, shadows } from '@/constants/theme';
 import { openNotificationTarget } from '@/navigation/notificationTarget';
 import { useRootNavigation } from '@/navigation/hooks';
 import { useNotificationStore } from '@/store/useNotificationStore';
-import type { AppNotification, NotificationKind } from '@/types';
+import { useVisibleAlerts } from '@/store/useAlertsStore';
+import type { AppNotification, NotificationKind, ServiceAlert } from '@/types';
 import { formatTimeAgo } from '@/utils/format';
+
+/** Render a live backend service alert with the existing notification card. */
+function alertToNotification(a: ServiceAlert): AppNotification {
+  const routes = a.affectedRoutes.length ? `${a.affectedRoutes.join(', ')} · ` : '';
+  return {
+    id: `alert-${a.id}`,
+    kind: 'disruption',
+    title: `${routes}${a.title}`,
+    body: a.description,
+    createdAt: a.publishedAt,
+    read: true, // alerts have no per-user read state in Phase 0
+  };
+}
 
 const KIND_STYLE: Record<NotificationKind, { icon: keyof typeof Ionicons.glyphMap; bg: string; fg: string; card: string; border: string; tag: string }> = {
   disruption: { icon: 'warning', bg: colors.error, fg: colors.white, card: '#FEF7F6', border: '#F6D6D3', tag: 'VÝLUKA' },
@@ -29,18 +43,20 @@ export function NotificationsScreen() {
   const notifications = useNotificationStore((s) => s.notifications);
   const markRead = useNotificationStore((s) => s.markRead);
   const markAllRead = useNotificationStore((s) => s.markAllRead);
+  const alerts = useVisibleAlerts();
 
   const [filter, setFilter] = useState<Filter>('all');
 
   const filtered = useMemo(() => {
-    const sorted = [...notifications].sort(
+    const merged = [...alerts.map(alertToNotification), ...notifications];
+    const sorted = merged.sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     if (filter === 'unread') return sorted.filter((n) => !n.read);
     if (filter === 'trips') return sorted.filter((n) => n.kind === 'disruption' || n.kind === 'trip_update');
     if (filter === 'offers') return sorted.filter((n) => n.kind === 'offer');
     return sorted;
-  }, [notifications, filter]);
+  }, [notifications, alerts, filter]);
 
   const handlePress = (n: AppNotification) => {
     markRead(n.id);

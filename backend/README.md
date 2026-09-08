@@ -66,6 +66,8 @@ curl -s "http://localhost:8080/api/vehicles" | jq '[.vehicles[].operatorId] | un
 | `GET /api/network` | the static DPMK network (routes + stops + map shapes), `ETag` | 24 h immutable |
 | `GET /api/routes/:shortName` | one route (patterns + shape) | 24 h |
 | `GET /api/search?q=` | stop/place autocomplete (proxied, Košice-filtered) | 5 min + single-flight |
+| `GET /api/alerts?status=&type=` | DPMK service alerts from the `dpmk.sk/aktuality` RSS — parsed, classified, routes/stops resolved (Phase 0). Default view hides `ended`. | poller (3 min) |
+| `GET /api/alerts/:id` | one alert (`id` = the RSS `<guid>` number) | poller (3 min) |
 
 Response bodies reuse the app's domain types (`Vehicle`, `Stop`, `Departure`,
 `NearbyStop`, `VehicleDetail`, `TransitRoute`) — see `src/types.ts`.

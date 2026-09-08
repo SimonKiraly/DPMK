@@ -1,3 +1,5 @@
+import type { DpmkNetworkStop } from '@/data/dpmkNetwork';
+import { networkStopById, normalizeText, searchStops } from '@/data/stopSearch';
 import type { Place } from '@/types';
 
 /**
@@ -110,10 +112,49 @@ export const PLACE_BY_ID: Record<string, Place> = Object.fromEntries(
   PLACES.map((p) => [p.id, p]),
 );
 
+/** A network stop rendered as a `Place` (id = stop id, canonical name kept). */
+function stopToPlace(s: DpmkNetworkStop): Place {
+  const lines = s.lines.slice(0, 6).join(' · ');
+  return {
+    id: s.id,
+    name: s.name,
+    subtitle: lines ? `MHD zastávka · ${lines}` : 'MHD zastávka',
+    location: { latitude: s.latitude ?? 0, longitude: s.longitude ?? 0 },
+    nearestStopId: s.id,
+    kind: 'stop',
+  };
+}
+
+/**
+ * Resolve a planner endpoint id to a `Place`. Curated POIs/addresses win;
+ * otherwise any of the 258 network stop ids (`s-…`) resolves to that stop.
+ */
+export function getPlace(id: string): Place | undefined {
+  const curated = PLACE_BY_ID[id];
+  if (curated) return curated;
+  const stop = networkStopById(id);
+  return stop ? stopToPlace(stop) : undefined;
+}
+
+/**
+ * Free-text search for a planner endpoint: the curated POIs/addresses above
+ * plus every MHD stop (diacritics-insensitive, multi-word, small typo
+ * tolerance — see `stopSearch.ts`). Empty query keeps the old behaviour
+ * (the curated shortlist).
+ */
 export function searchPlaces(query: string): Place[] {
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return PLACES;
-  return PLACES.filter(
-    (p) => p.name.toLowerCase().includes(q) || p.subtitle.toLowerCase().includes(q),
+
+  const nq = normalizeText(q);
+  const curated = PLACES.filter(
+    (p) => normalizeText(p.name).includes(nq) || normalizeText(p.subtitle).includes(nq),
   );
+  const covered = new Set(curated.map((p) => p.nearestStopId));
+
+  const stops = searchStops(q, 12)
+    .filter((s) => !covered.has(s.id))
+    .map(stopToPlace);
+
+  return [...curated, ...stops].slice(0, 12);
 }

@@ -1,8 +1,9 @@
-import { dataSource, simulation, ubian } from '@/constants/config';
+import { backendApi, dataSource, simulation, ubian } from '@/constants/config';
+import { apiClient } from '@/services/apiClient';
 import { ubianService } from '@/services/ubianService';
 import { transportStatus } from '@/store/useTransportStatusStore';
 import { useUserStore } from '@/store/useUserStore';
-import { PLACE_BY_ID } from '@/data/places';
+import { getPlace } from '@/data/places';
 import {
   ROUTES,
   ROUTE_PATTERNS,
@@ -28,6 +29,7 @@ import type {
   VehicleTimelineEntry,
 } from '@/types';
 import { haversineMeters, pointAlongPolyline } from '@/utils/geo';
+import { isServiceRunningAt } from '@/utils/serviceHours';
 
 /**
  * Transport data + live-vehicle simulation.
@@ -52,6 +54,16 @@ export function isLiveTransport(): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * The live-vehicle path is active when the Railway backend is enabled (the
+ * default — `EXPO_PUBLIC_USE_BACKEND_API`) OR the user opted into live data in
+ * Settings. This migration moves *only vehicles* to a live source; nearby
+ * stops / departures / search still follow `isLiveTransport()` alone.
+ */
+export function isLiveVehicleSource(): boolean {
+  return backendApi.enabled || isLiveTransport();
 }
 
 /* ------------------------------------------------------------- deterministic rng */
@@ -140,6 +152,9 @@ export function getStopDepartures(stopId: string, limit = 6, from = new Date()):
     for (let n = 0; n < 2; n += 1) {
       const minutesFromNow = phase + n * headway + liveDelay;
       const time = new Date(baseMs + minutesFromNow * 60000);
+      // Only surface a departure when its service class is actually running at
+      // that wall-clock time in Košice (day lines vs the night N* window).
+      if (!isServiceRunningAt(pattern.mode, time)) continue;
       out.push({
         routeShortName: pattern.shortName,
         mode: pattern.mode,
@@ -380,6 +395,7 @@ export async function planJourneys(
   for (const plan of ridesBetween(from.stopId, to.stopId)) {
     const walkArrivalAtStop = startMs + accessWalkFrom * 60000;
     const boardMs = nextDeparture(plan.pattern, from.stopId, walkArrivalAtStop);
+    if (!isServiceRunningAt(plan.pattern.mode, new Date(boardMs))) continue;
     const ride = buildRideLeg(plan, boardMs);
     const legs = makeAccessLegs(boardMs, new Date(ride.arrival).getTime(), [ride]);
     journeys.push(assembleJourney(from, to, legs, 0));
@@ -404,9 +420,11 @@ export async function planJourneys(
 
         const walkArrivalAtStop = startMs + accessWalkFrom * 60000;
         const boardA = nextDeparture(legA, from.stopId, walkArrivalAtStop);
+        if (!isServiceRunningAt(legA.mode, new Date(boardA))) continue;
         const rideA = buildRideLeg({ pattern: legA, fromIdx, toIdx: hubIdx }, boardA);
         const transferReadyMs = new Date(rideA.arrival).getTime() + 2 * 60000; // 2 min transfer
         const boardB = nextDeparture(legB.pattern, hubId, transferReadyMs);
+        if (!isServiceRunningAt(legB.pattern.mode, new Date(boardB))) continue;
         const rideB = buildRideLeg(legB, boardB);
 
         const transferWalk: JourneyLeg = {
@@ -478,8 +496,8 @@ export async function planJourneysBetweenPlaces(
   toPlaceId: string,
   opts: PlanOptions = {},
 ): Promise<Journey[]> {
-  const from = PLACE_BY_ID[fromPlaceId];
-  const to = PLACE_BY_ID[toPlaceId];
+  const from = getPlace(fromPlaceId);
+  const to = getPlace(toPlaceId);
   if (!from || !to) return [];
   return planJourneys(
     { name: from.name, location: from.location, stopId: from.nearestStopId },
@@ -576,18 +594,66 @@ function notify(): void {
   listeners.forEach((l) => l(vehicles));
 }
 
+/**
+ * One fleet refresh, backend-first:
+ *   1. Railway backend (`/api/vehicles`) — already MHD-filtered + normalised
+ *   2. direct Ubian feed (existing client, existing weak filter) — if 1 fails
+ *   3. (caller) local simulation — if 2 also fails
+ */
+async function fetchLiveFleet(): Promise<{ vehicles: Vehicle[]; fromBackend: boolean }> {
+  if (backendApi.enabled) {
+    try {
+      return { vehicles: await apiClient.fetchVehicles(), fromBackend: true };
+    } catch (err) {
+      if (__DEV__) {
+        console.warn(
+          `[transport] backend /api/vehicles failed (${(err as Error).message}) — falling back to Ubian`,
+        );
+      }
+    }
+  }
+  const list = await ubianService.getVehicles(ubian.fleetCenter, ubian.fleetRadiusMeters);
+  return { vehicles: list, fromBackend: false };
+}
+
+/**
+ * A live vehicle's stop timeline, backend-first (`GET /api/vehicles/:id`), then
+ * the direct Ubian trip-stops call. Falls back silently — the detail screen
+ * shows the vehicle immediately and fills the timeline when this resolves.
+ */
+async function loadVehicleDetail(vehicle: Vehicle): Promise<VehicleDetail> {
+  if (backendApi.enabled) {
+    try {
+      return await apiClient.fetchVehicleDetail(vehicle.id);
+    } catch {
+      /* fall through to the direct Ubian client */
+    }
+  }
+  return ubianService.getVehicleDetail(vehicle);
+}
+
+let lastFleetSource: string | null = null;
+
 async function pollLive(): Promise<void> {
   try {
-    const live = await ubianService.getVehicles(ubian.fleetCenter, ubian.fleetRadiusMeters);
+    const { vehicles: live, fromBackend } = await fetchLiveFleet();
     vehicles = live;
     transportStatus.ok();
+    transportStatus.vehicleSource(fromBackend ? 'backend' : 'fallback');
+    const src = fromBackend ? 'backend' : 'ubian';
+    if (__DEV__ && src !== lastFleetSource) {
+      console.log(`[transport] live fleet source: ${src} (${live.length} vehicles)`);
+      lastFleetSource = src;
+    }
     notify();
   } catch {
     transportStatus.degraded();
     // Keep the last good fleet; only if we have nothing, show one sim frame.
     if (vehicles.length === 0 || vehicles[0]?.source === 'sim') {
+      transportStatus.vehicleSource('error');
       tick();
     } else {
+      transportStatus.vehicleSource('fallback');
       notify();
     }
   }
@@ -614,11 +680,13 @@ function stopIfIdle(): void {
 
 export function subscribeVehicles(listener: VehicleListener): () => void {
   listeners.add(listener);
-  if (isLiveTransport()) {
+  if (isLiveVehicleSource()) {
     transportStatus.setLive(true);
+    transportStatus.vehicleSource('loading');
     ensureLive();
   } else {
     transportStatus.setLive(false);
+    transportStatus.vehicleSource('fallback');
     ensureSim();
   }
   listener(vehicles);
@@ -629,7 +697,7 @@ export function subscribeVehicles(listener: VehicleListener): () => void {
 }
 
 export function getVehicles(filter?: { mode?: TransportMode | 'all'; query?: string }): Vehicle[] {
-  if (isLiveTransport()) {
+  if (isLiveVehicleSource()) {
     if (vehicles.length === 0 && !liveTimer) pollLive();
   } else if (vehicles.length === 0) {
     tick();
@@ -663,8 +731,7 @@ export function getVehicleDetail(id: string): VehicleDetail | undefined {
     const base = vehicle ?? liveDetailCache.get(id);
     if (!base) return undefined;
     if (vehicle) {
-      ubianService
-        .getVehicleDetail(vehicle)
+      loadVehicleDetail(vehicle)
         .then((d) => liveDetailCache.set(id, d))
         .catch(() => {});
     }

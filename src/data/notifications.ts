@@ -1,9 +1,12 @@
 import type { AppNotification } from '@/types';
 
 /**
- * Seed content for the notification centre. New notifications (ticket expiry
- * reminders, purchase confirmations) are appended at runtime by
- * `notificationService`. Replace the seed with a real inbox / push feed later.
+ * Seed content for the notification centre — tickets / trip updates / offers.
+ * Ticket notifications are appended at runtime by `notificationService`.
+ *
+ * Service disruptions are NOT seeded here: they come live from the backend
+ * (`GET /api/alerts` → `useAlertsStore`) and the Notifications screen merges
+ * them in. See `docs/…` Phase 0.
  */
 export function seedNotifications(): AppNotification[] {
   const now = Date.now();
@@ -12,15 +15,6 @@ export function seedNotifications(): AppNotification[] {
   const day = 24 * hour;
 
   return [
-    {
-      id: 'n-disruption-6',
-      kind: 'disruption',
-      title: 'Električka 6 odklonená do 14:00',
-      body: 'Práce na Hlavnej. Medzi zastávkami Dóm sv. Alžbety a Amfiteáter použite električku 4 alebo autobus 12.',
-      createdAt: new Date(now - 12 * min).toISOString(),
-      read: false,
-      cta: { label: 'Zobraziť náhradnú trasu', target: { screen: 'Planner' } },
-    },
     {
       id: 'n-trip-16',
       kind: 'trip_update',

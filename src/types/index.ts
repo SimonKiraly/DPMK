@@ -274,6 +274,54 @@ export interface FavoritePlace {
 
 export type Favorite = FavoriteStop | FavoriteRoute | FavoritePlace;
 
+/* ------------------------------------------------------------- service alerts */
+
+/**
+ * DPMK service-disruption alert from the backend RSS pipeline
+ * (`GET /api/alerts`). Client-side mirror of `backend/src/types.ts` — keep in
+ * sync. Missing information is `null` / `[]` (the RSS is never second-guessed).
+ */
+export type AlertType = 'connection_cancelled' | 'delays' | 'planned' | 'other';
+export type AlertSeverity = 'info' | 'minor' | 'major' | 'severe';
+export type AlertStatus = 'active' | 'upcoming' | 'ended';
+
+export interface AlertStopRef {
+  id: string;
+  name: string;
+  confidence: 'exact' | 'fuzzy';
+}
+
+export interface CancelledDeparture {
+  routeShortNames: string[];
+  stopName: string;
+  stopId: string | null;
+  direction: string | null;
+  time: string | null;
+}
+
+export interface ServiceAlert {
+  id: string;
+  source: 'dpmk-rss';
+  sourceUrl: string;
+  publishedAt: string;
+  updatedAt: string;
+  firstSeenAt: string;
+  lastSeenInFeedAt: string;
+  title: string;
+  type: AlertType;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  validFrom: string | null;
+  validTo: string | null;
+  affectedRoutes: string[];
+  affectedStops: AlertStopRef[];
+  description: string;
+  reason: string | null;
+  cancelledDepartures: CancelledDeparture[];
+  rawText: string;
+  needsReview: boolean;
+}
+
 /* ------------------------------------------------------------------ notifications */
 
 export type NotificationKind = 'disruption' | 'trip_update' | 'info' | 'offer' | 'ticket';
