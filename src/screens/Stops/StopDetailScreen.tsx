@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 
+import { AlertStrip } from '@/components/alerts/AlertStrip';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -19,6 +20,7 @@ import { getStop, stopLabel } from '@/data/stops';
 import { useInterval } from '@/hooks/useInterval';
 import { getStopDetail } from '@/services/transportService';
 import { useRootNavigation } from '@/navigation/hooks';
+import { useActiveStopAlerts } from '@/store/useAlertsStore';
 import { useFavoritesStore } from '@/store/useFavoritesStore';
 import type { Departure, Stop } from '@/types';
 import type { RootStackParamList } from '@/navigation/types';
@@ -31,6 +33,7 @@ export function StopDetailScreen() {
   const [departures, setDepartures] = useState<Departure[] | null>(null);
   const isSaved = useFavoritesStore((s) => s.isStopSaved(stopId));
   const toggleStop = useFavoritesStore((s) => s.toggleStop);
+  const stopAlerts = useActiveStopAlerts(stopId);
 
   const reload = () =>
     getStopDetail(stopId).then((r) => {
@@ -75,6 +78,12 @@ export function StopDetailScreen() {
       />
 
       <TransportStatusBanner style={{ marginBottom: 10 }} />
+
+      <AlertStrip
+        alerts={stopAlerts}
+        onPress={(a) => navigation.navigate('AlertDetail', { alertId: a.id })}
+        style={{ marginBottom: 10 }}
+      />
 
       <Card style={{ marginTop: 4 }}>
         <Text variant="overline" color={colors.textTertiary}>

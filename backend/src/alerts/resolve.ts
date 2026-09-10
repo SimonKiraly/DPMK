@@ -55,23 +55,36 @@ export interface StopResolution {
   unresolved: string[];
 }
 
-/** Resolve a list of stop phrases (from `MIESTO:` lines / prose) to stop refs. */
-export function resolveStops(phrases: string[]): StopResolution {
+/** A stop phrase, optionally already split from its `… smer X` direction. */
+export type StopPhrase = string | { place: string; direction?: string | null };
+
+/**
+ * Resolve a list of stop phrases (from `MIESTO:` lines / prose) to stop refs.
+ * A `{ place, direction }` input carries its direction onto the resolved ref;
+ * the first direction seen for a given stop wins (deduped by id).
+ */
+export function resolveStops(phrases: StopPhrase[]): StopResolution {
   const seen = new Set<string>();
   const stops: AlertStopRef[] = [];
   const unresolved: string[] = [];
 
-  for (const phrase of phrases) {
-    const p = phrase.trim();
-    if (!p) continue;
-    const hit = resolveStopPhrase(p);
+  for (const raw of phrases) {
+    const place = (typeof raw === 'string' ? raw : raw.place).trim();
+    const direction = typeof raw === 'string' ? null : raw.direction ?? null;
+    if (!place) continue;
+    const hit = resolveStopPhrase(place);
     if (!hit) {
-      unresolved.push(p);
+      unresolved.push(place);
       continue;
     }
     if (seen.has(hit.stop.id)) continue;
     seen.add(hit.stop.id);
-    stops.push({ id: hit.stop.id, name: hit.stop.name, confidence: hit.confidence });
+    stops.push({
+      id: hit.stop.id,
+      name: hit.stop.name,
+      confidence: hit.confidence,
+      direction: direction || null,
+    });
   }
 
   return { stops, unresolved };

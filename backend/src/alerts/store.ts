@@ -44,6 +44,7 @@ class AlertStore {
           validTo: a.validTo,
           lastSeenInFeedAt: a.lastSeenInFeedAt,
           inLatestFeed: present.has(id),
+          cancelledDepartureTimes: a.cancelledDepartures.map((d) => d.time),
         },
         now,
       );
@@ -83,6 +84,7 @@ class AlertStore {
           lastSeenInFeedAt: a.lastSeenInFeedAt,
           // "in latest feed" ≈ seen within one poll interval + slack
           inLatestFeed: now - Date.parse(a.lastSeenInFeedAt) < config.alerts.pollMs * 2,
+          cancelledDepartureTimes: a.cancelledDepartures.map((d) => d.time),
         },
         now,
       ),

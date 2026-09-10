@@ -60,6 +60,11 @@ export function NotificationsScreen() {
 
   const handlePress = (n: AppNotification) => {
     markRead(n.id);
+    // Live DPMK alerts render with an `alert-<guid>` id — open the full detail.
+    if (n.id.startsWith('alert-')) {
+      navigation.navigate('AlertDetail', { alertId: n.id.slice('alert-'.length) });
+      return;
+    }
     if (n.cta) openNotificationTarget(navigation, n.cta.target);
   };
 

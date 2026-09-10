@@ -50,6 +50,11 @@ const EnvSchema = z.object({
   ALERTS_TIMEOUT_MS: int(10_000, 1_000),
   /** An operational notice this long past its last feed appearance → `ended`. */
   ALERTS_OPERATIONAL_GRACE_MS: int(2 * 60 * 60_000, 0),
+  /**
+   * A `connection_cancelled` notice whose every cancelled departure has an
+   * explicit time is `ended` once the latest of those times is this long past.
+   */
+  ALERTS_DEPARTURE_GRACE_MS: int(30 * 60_000, 0),
   /** A planned/other notice gone from the feed this long → `ended`. */
   ALERTS_PLANNED_RETENTION_MS: int(30 * 24 * 60 * 60_000, 0),
 
@@ -111,6 +116,7 @@ function load() {
       timeoutMs: e.ALERTS_TIMEOUT_MS,
       staleAfterMs: Math.max(10 * 60_000, e.ALERTS_POLL_MS * 3),
       operationalGraceMs: e.ALERTS_OPERATIONAL_GRACE_MS,
+      departureGraceMs: e.ALERTS_DEPARTURE_GRACE_MS,
       plannedRetentionMs: e.ALERTS_PLANNED_RETENTION_MS,
     },
 

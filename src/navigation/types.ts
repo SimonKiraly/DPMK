@@ -27,6 +27,10 @@ export type RootStackParamList = {
   NearbyStops: undefined;
   StopDetail: { stopId: string };
 
+  /* service alerts (Výluky a informácie) */
+  Alerts: undefined;
+  AlertDetail: { alertId: string };
+
   /* tickets & purchase flow */
   Checkout: { productId: string; fareClass: FareClass };
   Payment: { productId: string; fareClass: FareClass; activateNow: boolean };

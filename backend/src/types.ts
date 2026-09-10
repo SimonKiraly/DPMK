@@ -153,6 +153,8 @@ export interface AlertStopRef {
   name: string;
   /** How the notice text matched: exact name/alias vs a fuzzy hit. */
   confidence: 'exact' | 'fuzzy';
+  /** Direction terminus this stop was named with (`… smer X`), verbatim, or `null`. */
+  direction?: string | null;
 }
 
 /** One cancelled departure from a `VÝPADOK SPOJA` notice (`MIESTO:` / `ČAS:`). */
@@ -176,7 +178,11 @@ export interface ServiceAlert {
   sourceUrl: string;
   /** RSS `<pubDate>` as ISO. */
   publishedAt: string;
-  /** When the backend last (re)parsed this item. */
+  /**
+   * When the notice was last revised: the `AKTUALIZÁCIA (HH:MM)` stamp in the
+   * body paired with the publication date when one is present and reliable,
+   * otherwise the time the backend last (re)parsed this item.
+   */
   updatedAt: string;
   /** First time the backend saw this guid. */
   firstSeenAt: string;

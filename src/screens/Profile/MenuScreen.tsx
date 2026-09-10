@@ -17,6 +17,7 @@ type Dest =
   | 'Favorites'
   | 'MyTickets'
   | 'LostFound'
+  | 'Alerts'
   | 'Settings'
   | 'NotificationsTab';
 
@@ -47,6 +48,7 @@ export function MenuScreen() {
       title: 'Cestovanie',
       items: [
         { label: 'Moje lístky', icon: 'ticket-outline', dest: 'MyTickets' },
+        { label: 'Výluky a informácie', icon: 'warning-outline', dest: 'Alerts' },
         { label: 'Straty a nálezy', icon: 'search-outline', dest: 'LostFound' },
       ],
     },

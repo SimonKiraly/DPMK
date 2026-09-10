@@ -53,6 +53,12 @@ interface AlertsResponse {
   source: string;
 }
 
+/** `GET /api/alerts/:id` envelope. */
+interface AlertResponse {
+  alert: ServiceAlert;
+  updatedAt: string | null;
+}
+
 async function apiGet<T>(path: string): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), backendApi.requestTimeoutMs);
@@ -147,6 +153,19 @@ export const apiClient = {
       throw new ApiError('unexpected /api/alerts response shape');
     }
     return data.alerts.filter(looksLikeAlert);
+  },
+
+  /**
+   * One DPMK alert by id (the RSS `<guid>` number). Used as a fallback when a
+   * detail screen is opened for an alert that is no longer in the list snapshot
+   * (e.g. it just ended). Throws `ApiError` on failure or 404.
+   */
+  async fetchAlert(id: string): Promise<ServiceAlert> {
+    const data = await apiGet<AlertResponse>(`/api/alerts/${encodeURIComponent(id)}`);
+    if (data == null || !looksLikeAlert(data.alert)) {
+      throw new ApiError('unexpected /api/alerts/:id response shape');
+    }
+    return data.alert;
   },
 
   /** Liveness probe. Never throws — returns `false` on any problem. */

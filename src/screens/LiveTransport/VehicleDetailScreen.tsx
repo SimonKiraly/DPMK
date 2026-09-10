@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { RouteProp } from '@react-navigation/native';
 import { useRoute } from '@react-navigation/native';
 
+import { AlertStrip } from '@/components/alerts/AlertStrip';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -18,18 +19,22 @@ import { colors } from '@/constants/theme';
 import { getRoute } from '@/data/routes';
 import { useInterval } from '@/hooks/useInterval';
 import { getVehicleDetail } from '@/services/transportService';
+import { useActiveRouteAlerts } from '@/store/useAlertsStore';
 import { useFavoritesStore } from '@/store/useFavoritesStore';
+import { useRootNavigation } from '@/navigation/hooks';
 import type { RootStackParamList } from '@/navigation/types';
 import type { VehicleDetail } from '@/types';
 import { formatRelativeMinutes } from '@/utils/format';
 
 export function VehicleDetailScreen() {
+  const navigation = useRootNavigation();
   const { vehicleId } = useRoute<RouteProp<RootStackParamList, 'VehicleDetail'>>().params;
   const [detail, setDetail] = useState<VehicleDetail | undefined>(() => getVehicleDetail(vehicleId));
 
   useInterval(() => setDetail(getVehicleDetail(vehicleId)), 2000);
   useEffect(() => setDetail(getVehicleDetail(vehicleId)), [vehicleId]);
 
+  const routeAlerts = useActiveRouteAlerts(detail?.routeShortName);
   const route = detail ? getRoute(detail.routeShortName) : undefined;
   const toggleRoute = useFavoritesStore((s) => s.toggleRoute);
   const isSaved = useFavoritesStore((s) => (route ? s.isRouteSaved(route.id) : false));
@@ -66,6 +71,12 @@ export function VehicleDetailScreen() {
             </Text>
           </View>
         }
+      />
+
+      <AlertStrip
+        alerts={routeAlerts}
+        onPress={(a) => navigation.navigate('AlertDetail', { alertId: a.id })}
+        style={{ marginTop: 4 }}
       />
 
       <Card style={{ marginTop: 4 }}>

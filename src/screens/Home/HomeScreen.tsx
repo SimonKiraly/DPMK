@@ -21,6 +21,7 @@ import { useFavoriteStops } from '@/store/useFavoritesStore';
 import { selectActiveTicket, useTicketStore } from '@/store/useTicketStore';
 import { useTopAlert } from '@/store/useAlertsStore';
 import { useUserStore } from '@/store/useUserStore';
+import { alertVisual } from '@/utils/alerts';
 import { formatRelativeMinutes } from '@/utils/format';
 
 function greeting(): string {
@@ -44,6 +45,7 @@ export function HomeScreen() {
   const activeTicket = useTicketStore(selectActiveTicket);
   const favoriteStops = useFavoriteStops();
   const topAlert = useTopAlert();
+  const topAlertVisual = alertVisual(topAlert ?? { severity: 'info', type: 'other' });
 
   const { stops: nearby, usingFallback } = useNearbyStops({ limit: 3 });
 
@@ -174,42 +176,57 @@ export function HomeScreen() {
 
           {/* service alert — live from the backend DPMK feed */}
           {topAlert ? (
-            <Pressable onPress={() => navigation.navigate('Main', { screen: 'NotificationsTab' })}>
-              <View
-                style={{
-                  backgroundColor: colors.errorTint,
-                  borderWidth: 1,
-                  borderColor: '#F6D6D3',
-                  borderRadius: 18,
-                  padding: 14,
-                  flexDirection: 'row',
-                  gap: 11,
-                }}
-              >
+            <View style={{ gap: 8 }}>
+              <SectionHeading
+                title="Výluky a informácie"
+                actionLabel="Zobraziť všetky"
+                onAction={() => navigation.navigate('Alerts')}
+              />
+              <Pressable onPress={() => navigation.navigate('AlertDetail', { alertId: topAlert.id })}>
                 <View
                   style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 9,
-                    backgroundColor: colors.error,
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    backgroundColor: topAlertVisual.tint,
+                    borderWidth: 1,
+                    borderColor: topAlertVisual.border,
+                    borderRadius: 18,
+                    padding: 14,
+                    flexDirection: 'row',
+                    gap: 11,
                   }}
                 >
-                  <Ionicons name="warning" size={15} color={colors.white} />
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: 9,
+                      backgroundColor: topAlertVisual.accent,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons name={topAlertVisual.icon} size={15} color={colors.white} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="body" weight="extrabold" color={topAlertVisual.body}>
+                      {topAlert.affectedRoutes.length
+                        ? `${topAlert.affectedRoutes.join(', ')} · ${topAlert.title}`
+                        : topAlert.title}
+                    </Text>
+                    {topAlert.description ? (
+                      <Text
+                        variant="caption"
+                        color={colors.textSecondary}
+                        style={{ marginTop: 3 }}
+                        numberOfLines={2}
+                      >
+                        {topAlert.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={topAlertVisual.body} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text variant="body" weight="extrabold" color="#8E2F2C">
-                    {topAlert.affectedRoutes.length
-                      ? `${topAlert.affectedRoutes.join(', ')} · ${topAlert.title}`
-                      : topAlert.title}
-                  </Text>
-                  <Text variant="caption" color="#A4514E" style={{ marginTop: 3 }} numberOfLines={2}>
-                    {topAlert.description}
-                  </Text>
-                </View>
-              </View>
-            </Pressable>
+              </Pressable>
+            </View>
           ) : null}
 
           {/* upcoming departures */}

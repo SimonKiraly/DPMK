@@ -2,10 +2,13 @@
  * Field extraction for the DPMK feed body text (already flattened by `rss.ts`).
  *
  * Shape A ("MHD Aktuálne" short notices) is a list of `KEY: value` lines and is
- * fully parsed. Planned notices are Slovak prose — Phase 0 only cleans the
- * boilerplate off them for `description`; their dates/stops are left for a later
- * phase and never guessed here.
+ * fully parsed. Planned notices are Slovak prose — the boilerplate is cleaned
+ * off for `description`, and a few deterministic signals (an explicit
+ * `od …/do …` date range, a `z dôvodu …` reason, an `AKTUALIZÁCIA (HH:MM)`
+ * revision stamp) are lifted out when the phrasing is unambiguous. Nothing that
+ * is not written plainly in the text is ever guessed.
  */
+import { combineDateAndClock, kosiceDateToIso } from '../lib/time.js';
 
 /** Fold diacritics + lowercase, for matching Slovak field labels. */
 function fold(s: string): string {
@@ -192,4 +195,112 @@ export function cleanPlannedDescription(bodyText: string, maxLen = 600): string 
   }
   const text = kept.join(' ').replace(/\s+/g, ' ').trim();
   return text.length > maxLen ? `${text.slice(0, maxLen - 1).trimEnd()}…` : text;
+}
+
+/* --------------------------------------------------- planned: dates & reason */
+
+/**
+ * Slovak month names folded to `1‥12` — nominative, genitive ("7. septembra")
+ * and locative ("v septembri"), plus their diacritic-free forms (the body text
+ * is `fold()`-ed before matching).
+ */
+const MONTHS: Record<string, number> = {
+  januar: 1, januara: 1, januari: 1,
+  februar: 2, februara: 2, februari: 2,
+  marec: 3, marca: 3, marci: 3,
+  april: 4, aprila: 4, aprili: 4,
+  maj: 5, maja: 5, maji: 5,
+  jun: 6, juna: 6, juni: 6,
+  jul: 7, jula: 7, juli: 7,
+  august: 8, augusta: 8, auguste: 8,
+  september: 9, septembra: 9, septembri: 9,
+  oktober: 10, oktobra: 10, oktobri: 10,
+  november: 11, novembra: 11, novembri: 11,
+  december: 12, decembra: 12, decembri: 12,
+};
+
+export interface PlannedDates {
+  /** ISO Košice-midnight start when the text states an explicit `od …` date. */
+  validFrom: string | null;
+  /** ISO Košice end-of-day when the text states an explicit `do …` date. */
+  validTo: string | null;
+  /** True once a `validFrom` was lifted from unambiguous phrasing. */
+  confident: boolean;
+}
+
+function resolveYear(explicit: string | undefined, month: number, day: number, base: Date): {
+  year: number;
+} {
+  const pubYear = Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bratislava', year: 'numeric' }).format(base),
+  );
+  if (explicit) return { year: Number(explicit) };
+  // Planned notices always describe the future: if this day/month sits well
+  // before the publication date, the notice means next year.
+  const sameYear = Date.parse(kosiceDateToIso(pubYear, month, day, 12, 0));
+  return { year: sameYear < base.getTime() - 14 * 24 * 60 * 60_000 ? pubYear + 1 : pubYear };
+}
+
+/**
+ * Pull an explicit validity window out of planned-notice prose. Only fires on
+ * `od <deň>. <mesiac> [rok]` / `do <deň>. <mesiac> [rok]` (or the fully numeric
+ * `od DD. MM. YYYY`) — a bare "od pondelka" with no date is left as `null`.
+ */
+export function parsePlannedDates(bodyText: string, publishedAt: string): PlannedDates {
+  const base = new Date(publishedAt);
+  if (Number.isNaN(base.getTime())) return { validFrom: null, validTo: null, confident: false };
+
+  const text = ` ${fold(bodyText).replace(/\s+/g, ' ')} `;
+  const monthAlt = Object.keys(MONTHS).join('|');
+  const re = new RegExp(
+    String.raw`\b(od|do)\b (?:[a-z]+ )?(\d{1,2})\. ?(?:(${monthAlt})|(\d{1,2})\.) ?(\d{4})?`,
+    'g',
+  );
+
+  let validFrom: string | null = null;
+  let validTo: string | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index === re.lastIndex) re.lastIndex += 1;
+    const prep = m[1]!;
+    const day = Number(m[2]);
+    const month = m[3] ? MONTHS[m[3]]! : Number(m[4]);
+    if (!month || month < 1 || month > 12 || day < 1 || day > 31) continue;
+    const { year } = resolveYear(m[5], month, day, base);
+    if (prep === 'od' && !validFrom) validFrom = kosiceDateToIso(year, month, day, 0, 0);
+    else if (prep === 'do' && !validTo) validTo = kosiceDateToIso(year, month, day, 23, 59);
+  }
+  // Guard against a reversed pair ("do" earlier than "od").
+  if (validFrom && validTo && Date.parse(validTo) <= Date.parse(validFrom)) validTo = null;
+
+  return { validFrom, validTo, confident: validFrom != null };
+}
+
+/** `"… z dôvodu rekonštrukčných prác …"` → `"rekonštrukčných prác …"`, or `null`. */
+export function extractPlannedReason(bodyText: string): string | null {
+  const m = bodyText.match(/z\s+dôvodu\s+(.+?)(?=\s*[.;]|,\s|\s+od\s+\w|\s+do\s+\w|$)/i);
+  if (!m) return null;
+  const reason = m[1]!.trim().replace(/\s+/g, ' ').replace(/[.,;:]+$/, '');
+  return reason.length >= 4 && reason.length <= 160 ? reason : null;
+}
+
+/**
+ * The `AKTUALIZÁCIA (HH:MM)` / `📍(HH:MM) AKTUALIZÁCIA:` revision stamp some
+ * operational notices carry, paired with the publication date. `null` when
+ * there is no such stamp, its time is unparseable, or pairing it with the
+ * publication day would place it *before* publication (so not a later revision).
+ */
+export function parseUpdateTimestamp(bodyText: string, publishedAt: string): string | null {
+  if (Number.isNaN(new Date(publishedAt).getTime())) return null;
+  const folded = fold(bodyText);
+  if (!/aktualizaci[ae]/.test(folded)) return null;
+
+  const before = folded.match(/(\d{1,2}:\d{2})\s*\)?\s*(?:[-–:]\s*)?aktualizaci[ae]/);
+  const after = folded.match(/aktualizaci[ae]\s*[:(]?\s*(?:o\s+)?(\d{1,2}:\d{2})/);
+  const hhmm = normalizeTime(before?.[1] ?? '') ?? normalizeTime(after?.[1] ?? '');
+  if (!hhmm) return null;
+
+  const iso = combineDateAndClock(new Date(publishedAt), hhmm);
+  if (!iso || Date.parse(iso) < Date.parse(publishedAt)) return null;
+  return iso;
 }

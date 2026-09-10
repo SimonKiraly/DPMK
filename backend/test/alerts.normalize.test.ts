@@ -83,14 +83,19 @@ describe('toServiceAlert — MEŠKANIE', () => {
 
 describe('toServiceAlert — planned', () => {
   const a = toServiceAlert(byTitle('Dočasná zmena zastavovania na Rastislavovej ulici'), undefined, NOW)!;
-  it('is classified, prose-cleaned, dates left null, flagged for review', () => {
+  it('is classified, prose-cleaned, and given the stated start date', () => {
     expect(a.type).toBe('planned');
     expect(a.severity).toBe('major');
-    expect(a.validFrom).toBeNull();
-    expect(a.validTo).toBeNull();
-    expect(a.needsReview).toBe(true);
+    // "od pondelka 7. septembra 2026" → Košice midnight of the 7th
+    expect(a.validFrom).toBe('2026-09-06T22:00:00.000Z');
+    expect(a.validTo).toBeNull(); // the notice states no end date
+    expect(a.reason).toBe('rekonštrukčných prác v okolí zastávok Verejný cintorín a Poľská');
     expect(a.description).toContain('7. septembra 2026');
     expect(a.description).not.toContain('hovorca@');
+  });
+  it('stays flagged for review while an alternative-stop phrase is unresolved', () => {
+    // "zastávku Triton alebo Verejný cintorín" does not resolve cleanly
+    expect(a.needsReview).toBe(true);
   });
   it('still resolves explicitly named lines/stops best-effort', () => {
     expect(a.affectedRoutes.sort()).toEqual(['12', '54']);

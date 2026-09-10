@@ -289,6 +289,8 @@ export interface AlertStopRef {
   id: string;
   name: string;
   confidence: 'exact' | 'fuzzy';
+  /** Direction terminus the stop was named with (`… smer X`), or `null`. */
+  direction?: string | null;
 }
 
 export interface CancelledDeparture {

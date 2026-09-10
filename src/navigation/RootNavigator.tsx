@@ -13,6 +13,8 @@ import { VehicleListScreen } from '@/screens/LiveTransport/VehicleListScreen';
 import { VehicleDetailScreen } from '@/screens/LiveTransport/VehicleDetailScreen';
 import { NearbyStopsScreen } from '@/screens/Stops/NearbyStopsScreen';
 import { StopDetailScreen } from '@/screens/Stops/StopDetailScreen';
+import { AlertsScreen } from '@/screens/Alerts/AlertsScreen';
+import { AlertDetailScreen } from '@/screens/Alerts/AlertDetailScreen';
 import { CheckoutScreen } from '@/screens/Tickets/CheckoutScreen';
 import { PaymentScreen } from '@/screens/Tickets/PaymentScreen';
 import { PaymentSuccessScreen } from '@/screens/Tickets/PaymentSuccessScreen';
@@ -52,6 +54,8 @@ export function RootNavigator() {
           <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
           <Stack.Screen name="NearbyStops" component={NearbyStopsScreen} />
           <Stack.Screen name="StopDetail" component={StopDetailScreen} />
+          <Stack.Screen name="Alerts" component={AlertsScreen} />
+          <Stack.Screen name="AlertDetail" component={AlertDetailScreen} />
           <Stack.Screen name="MyTickets" component={MyTicketsScreen} />
           <Stack.Screen name="ActiveTicket" component={ActiveTicketScreen} />
           <Stack.Screen name="Wallet" component={WalletScreen} />
