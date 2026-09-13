@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,81 +43,97 @@ export function OnboardingScreen() {
   const next = () => (index < SLIDES.length - 1 ? setIndex(index + 1) : finish());
 
   return (
-    <LinearGradient colors={[colors.primary, colors.primaryDeep]} style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1, justifyContent: 'space-between', padding: 28, paddingTop: 72 }}>
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: -80,
-            right: -90,
-            width: 280,
-            height: 280,
-            borderRadius: 140,
-            backgroundColor: 'rgba(255,213,56,0.14)',
-          }}
-        />
+    <LinearGradient colors={[colors.primary, colors.primaryDeep]} style={{ flex: 1, overflow: 'hidden' }}>
+      {/* Decorative accent — a sibling of the scroller, not inside it, so it stays
+          put as a background flourish instead of scrolling with the content. */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: -80,
+          right: -90,
+          width: 280,
+          height: 280,
+          borderRadius: 140,
+          backgroundColor: 'rgba(255,213,56,0.14)',
+        }}
+      />
 
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      {/*
+        A short viewport (a small phone, or an iPhone with a shallow one like the
+        13 mini once the status bar + home-indicator safe areas are subtracted)
+        can be shorter than this slide's content. `justifyContent: 'space-between'`
+        on a plain View has no fallback for that — anything that doesn't fit is
+        silently cut off with no way to reach it. A ScrollView with a `flexGrow: 1`
+        content container keeps the exact same "pin top group / pin bottom group"
+        look when everything fits, and scrolls instead of clipping when it doesn't.
+      */}
+      <SafeAreaView style={{ flex: 1, padding: 28, paddingTop: 72 }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'space-between' }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: colors.accent,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Ionicons name="bus" size={24} color={colors.primaryDeep} />
+              </View>
+              <Text variant="screenTitle" color={colors.white}>
+                {APP_NAME}
+              </Text>
+            </View>
+
             <View
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                backgroundColor: colors.accent,
+                marginTop: 56,
+                width: 72,
+                height: 72,
+                borderRadius: 22,
+                backgroundColor: 'rgba(255,255,255,0.12)',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name="bus" size={24} color={colors.primaryDeep} />
+              <Ionicons name={slide.icon} size={34} color={colors.accent} />
             </View>
-            <Text variant="screenTitle" color={colors.white}>
-              {APP_NAME}
+            <Text variant="hero" color={colors.white} style={{ marginTop: 28 }}>
+              {slide.title}
+            </Text>
+            <Text variant="bodyStrong" weight="semibold" color="rgba(255,255,255,0.72)" style={{ marginTop: 16, maxWidth: 300 }}>
+              {slide.body}
             </Text>
           </View>
 
-          <View
-            style={{
-              marginTop: 56,
-              width: 72,
-              height: 72,
-              borderRadius: 22,
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name={slide.icon} size={34} color={colors.accent} />
+          <View style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 7, marginBottom: 8 }}>
+              {SLIDES.map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: i === index ? 28 : 10,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: i === index ? colors.accent : 'rgba(255,255,255,0.28)',
+                  }}
+                />
+              ))}
+            </View>
+            <Button label={index < SLIDES.length - 1 ? 'Ďalej' : 'Začať'} variant="accent" size="lg" onPress={next} />
+            <Button label="Preskočiť" variant="ghost" onPress={finish} />
+            <Text variant="caption" center color="rgba(255,255,255,0.5)">
+              {OPERATOR}
+            </Text>
           </View>
-          <Text variant="hero" color={colors.white} style={{ marginTop: 28 }}>
-            {slide.title}
-          </Text>
-          <Text variant="bodyStrong" weight="semibold" color="rgba(255,255,255,0.72)" style={{ marginTop: 16, maxWidth: 300 }}>
-            {slide.body}
-          </Text>
-        </View>
-
-        <View style={{ gap: 12 }}>
-          <View style={{ flexDirection: 'row', gap: 7, marginBottom: 8 }}>
-            {SLIDES.map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  width: i === index ? 28 : 10,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: i === index ? colors.accent : 'rgba(255,255,255,0.28)',
-                }}
-              />
-            ))}
-          </View>
-          <Button label={index < SLIDES.length - 1 ? 'Ďalej' : 'Začať'} variant="accent" size="lg" onPress={next} />
-          <Button label="Preskočiť" variant="ghost" onPress={finish} />
-          <Text variant="caption" center color="rgba(255,255,255,0.5)">
-            {OPERATOR}
-          </Text>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );

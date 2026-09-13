@@ -1,0 +1,19 @@
+{
+  "name": "MHD Košice",
+  "short_name": "MHD Košice",
+  "description": "Cestovné informácie, odchody, mapa naživo a výluky MHD Košice.",
+  "start_url": "/",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "sk",
+  "dir": "ltr",
+  "theme_color": "#2B629E",
+  "background_color": "#2B629E",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

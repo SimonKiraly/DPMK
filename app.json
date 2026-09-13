@@ -36,7 +36,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "MHD Košice",
+      "shortName": "MHD Košice",
+      "lang": "sk",
+      "description": "Cestovné informácie, odchody, mapa naživo a výluky MHD Košice.",
+      "themeColor": "#2B629E",
+      "backgroundColor": "#2B629E",
+      "orientation": "portrait",
+      "display": "standalone"
     },
     "plugins": [
       "expo-secure-store",
